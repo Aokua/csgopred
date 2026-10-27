@@ -25,8 +25,7 @@ probabilities. Under strict walk-forward evaluation the model reaches a log loss
    walk-forward, and all results can be regenerated from the accompanying repository:
    a data snapshot with SHA-256 hashes, fixed seed, training script and experiment
    scripts, plus a Quarto manuscript that draws the figures and summary tables from
-   code. The repository is https://github.com/Aokua/csgopred (private at submission;
-   access will be granted to reviewers and made public upon acceptance).
+   code. The repository is public at https://github.com/Aokua/csgopred.
 3. *Honest negative results.* Beyond the positive results, the paper reports a
    feature-attribution study showing that format and tier features are harmful out of
    sample, and it tests and rejects two widely held business hypotheses (explicit
