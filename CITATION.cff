@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+title: "CS2 Win-Probability Prediction and Calibration System"
+message: "If you use this software or data, please cite the repository and the accompanying manuscript."
+type: software
+authors:
+  - family-names: Tang
+    given-names: Zixuan
+    affiliation: "Southwest Petroleum University, Chengdu, China"
+year: 2026
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/Aokua/csgopred"
+abstract: >-
+  An end-to-end system for predicting professional Counter-Strike 2 match
+  outcomes and calibrating the resulting probabilities, including Elo and
+  map-level ratings, veto simulation, feature-attribution analysis, and a
+  reproducible evaluation pipeline.
+keywords:
+  - esports
+  - Counter-Strike 2
+  - win probability
+  - Elo rating
+  - calibration
+  - reproducibility
+references:
+  - type: article
+    title: "Design and Implementation of a Win-Probability Prediction and Calibration System for CS2 Professional Matches"
+    authors:
+      - family-names: Tang
+        given-names: Zixuan
+    year: 2026
+    status: submitted

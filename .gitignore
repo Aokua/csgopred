@@ -1,6 +1,9 @@
 ﻿__pycache__/
 *.pyc
-data/raw/
-data/*.db
-data/*.pkl
 .pytest_cache/
+
+# Data snapshots are distributed via Git LFS (see .gitattributes).
+# Model binaries and intermediate artefacts stay out of the repository.
+data/*.pkl
+data/interim/
+data/processed/
