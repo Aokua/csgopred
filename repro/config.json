@@ -1,0 +1,53 @@
+{
+  "seed": 42,
+  "splits": ["2023-01-01", "2025-08-01", "2026-09-01"],
+  "primary_split": "2026-09-01",
+  "model": {
+    "kind": "lr",
+    "C": 0.5,
+    "penalty": "l2",
+    "solver": "lbfgs", "max_iter": 3000,
+    "calibration_fraction": 0.15,
+    "time_weight_half_life_days": 1500
+  },
+  "elo": {
+    "initial": 1500,
+    "k_base": 32,
+    "k_scale": 1.6,
+    "inactivity_decay_half_life_days": 180,
+    "margin_multiplier": "per-map-diff"
+  },
+  "map_elo": {
+    "k_map": 24,
+    "prior_games": 5,
+    "pool": ["Ancient", "Anubis", "Dust2", "Inferno", "Mirage", "Nuke", "Train"]
+  },
+  "features": {
+    "base20": [
+      "elo_diff", "elo_a", "elo_b", "log_games_a", "log_games_b",
+      "form10_a", "form10_b", "form30_a", "form30_b",
+      "rest_a", "rest_b", "density_a", "density_b",
+      "h2h", "is_bo1", "is_bo5", "tier_major", "tier_top", "lan", "year"
+    ],
+    "map": ["map_wr_a", "map_wr_b", "map_wr_diff", "map_n_a", "map_n_b",
+            "map_series_a", "map_series_diff"],
+    "player": ["lineup_adr_a", "lineup_adr_b", "lineup_kast_a", "lineup_kast_b",
+               "lineup_kd_a", "lineup_kd_b", "lineup_adr_diff", "lineup_kd_diff"],
+    "recommended25": [
+      "elo_diff", "elo_a", "elo_b", "log_games_a", "log_games_b",
+      "form10_a", "form10_b", "form30_a", "form30_b",
+      "rest_a", "rest_b", "density_a", "density_b", "h2h",
+      "unc_a", "unc_b", "h2h_n", "elo_bo3",
+      "map_wr_a", "map_wr_b", "map_wr_diff", "map_n_a", "map_n_b",
+      "map_series_a", "map_series_diff"
+    ],
+    "dropped_in_recommended": ["is_bo1", "is_bo5", "tier_major", "tier_top", "lan", "year"]
+  },
+  "artifacts": {
+    "db": "data/csgopred.db",
+    "model": "data/model.pkl",
+    "experiments": ["experiments/decompose.py", "experiments/feature_sets.py",
+                    "experiments/format_revenge.py", "experiments/revenge_groups.py",
+                    "experiments/rematch_calibration.py", "experiments/make_figures.py"]
+  }
+}

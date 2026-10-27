@@ -1,0 +1,6 @@
+﻿__pycache__/
+*.pyc
+data/raw/
+data/*.db
+data/*.pkl
+.pytest_cache/

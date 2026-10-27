@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS2 胜率与概率 · csgopred</title>
+<style>
+  :root{
+    --bg:#f5faf8; --card:#ffffff; --line:#e4eeea;
+    --ink:#2f3e46; --muted:#7d8d95;
+    --mint:#8fd9c8; --mint-deep:#2f9c85; --sky:#9cc4f5;
+    --shadow:0 6px 20px rgba(47,62,70,.07);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);
+       background:
+         radial-gradient(900px 520px at 8% -10%, #e4f6ef 0%, transparent 62%),
+         radial-gradient(760px 420px at 100% 0%, #eaf2fe 0%, transparent 58%),
+         var(--bg);
+       font:14px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}
+  a{color:var(--mint-deep);text-decoration:none}
+  header{display:flex;align-items:baseline;gap:16px;padding:30px 34px 6px}
+  h1{font-size:21px;margin:0;letter-spacing:.4px;font-weight:600}
+  h1 span{color:var(--mint-deep)}
+  .sub{color:var(--muted);font-size:12px}
+  main{padding:12px 34px 46px;display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:start}
+  @media(max-width:980px){main{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+        padding:20px 22px;box-shadow:var(--shadow)}
+  .card h2{font-size:12px;margin:0 0 14px;color:var(--muted);font-weight:600;
+           letter-spacing:1.2px;text-transform:uppercase}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  input,select{width:100%;background:#fbfefd;border:1px solid var(--line);color:var(--ink);
+        border-radius:11px;padding:10px 12px;font-size:13px;outline:none;transition:.15s}
+  input:focus,select:focus{border-color:var(--mint-deep);box-shadow:0 0 0 3px rgba(47,156,133,.12)}
+  .field{flex:1;min-width:130px}
+  button{margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;cursor:pointer;
+         background:linear-gradient(90deg,var(--mint),var(--sky));color:#20423b;
+         font-weight:700;font-size:14px;box-shadow:0 8px 18px rgba(47,156,133,.18);transition:.15s}
+  button:hover{filter:brightness(1.03)}
+  button:disabled{opacity:.55;cursor:wait}
+  .prob{display:flex;height:36px;border-radius:12px;overflow:hidden;margin:16px 0 8px;border:1px solid var(--line)}
+  .prob .a{background:linear-gradient(90deg,#a9ead9,#93d2f2);display:flex;align-items:center;
+           justify-content:center;font-weight:700;color:#1f4a41}
+  .prob .b{background:#f2f7f6;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  .kv div{background:#fbfefd;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .kv b{display:block;font-size:17px;color:var(--mint-deep)}
+  .kv span{font-size:11px;color:var(--muted)}
+  .drivers{margin-top:14px;font-size:12px;color:var(--muted)}
+  .maps{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.maps-title{font-size:12px;color:var(--muted);margin-bottom:6px}
+.maprow{display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0}
+.mname{width:64px;color:var(--ink)}
+.mbar{flex:1;height:8px;background:#eef3f1;border-radius:4px;overflow:hidden}
+.mbar i{display:block;height:100%;background:linear-gradient(90deg,#8fd3bd,#6ab7a3)}
+.mpct{width:44px;text-align:right;color:var(--muted)}
+.drivers span{display:inline-block;background:#f2faf7;border:1px solid var(--line);
+        border-radius:999px;padding:3px 11px;margin:4px 5px 0 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+  tr:hover td{background:#f7fcfb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .news .item{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .news .who{color:var(--mint-deep);font-weight:600}
+  .news .ev{color:var(--muted);font-size:12px}
+  .empty{color:var(--muted);font-size:13px;padding:10px 0}
+  footer{color:var(--muted);font-size:12px;padding:0 34px 30px;display:flex;gap:26px;flex-wrap:wrap}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;background:#f2faf7;
+         border:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .bet{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:13px 15px;background:#fbfefd}
+  .bet-head{font-weight:600;color:var(--mint-deep);margin-bottom:9px}
+  .bet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .bet-grid b{display:block;font-size:16px;color:var(--ink)}
+  .bet-grid span{font-size:11px;color:var(--muted)}
+  .bet .hint{margin-top:9px;line-height:1.55}
+.lang{font-size:12px;font-weight:400;color:var(--muted);text-decoration:none;margin-left:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>CS2 <span>胜率与概率</span> <a class="lang" href="/en">EN</a></h1>
+  <div class="sub" id="modelInfo">加载模型信息…</div>
+</header>
+
+<main>
+  <div class="col">
+  <section class="card">
+    <h2>比赛预测</h2>
+    <div class="row">
+      <div class="field">
+        <label>战队 A</label>
+        <input id="teamA" list="teams" placeholder="例如 Vitality" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>战队 B</label>
+        <input id="teamB" list="teams" placeholder="例如 Spirit" autocomplete="off">
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="field">
+        <label>赛制</label>
+        <select id="fmt"><option value="bo1">BO1（1 张图）</option><option value="bo3" selected>BO3（3 张图）</option><option value="bo5">BO5（5 张图）</option></select>
+      </div>
+      <div class="field">
+        <label>赛事（可选，影响级别特征）</label>
+        <input id="event" placeholder="例如 IEM Katowice 2026">
+      </div>
+      <div class="field">
+        <label>历史日期（可选）</label>
+        <input id="asof" type="date">
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="field">
+        <label>可用资金（可选，用于配置建议）</label>
+        <input id="bankroll" type="number" min="0" step="100" placeholder="例如 10000">
+      </div>
+      <div class="field">
+        <label>市场价格 A（可选）</label>
+        <input id="oddsA" type="number" min="1.01" step="0.01" placeholder="例如 2.10">
+      </div>
+      <div class="field">
+        <label>市场价格 B（可选）</label>
+        <input id="oddsB" type="number" min="1.01" step="0.01" placeholder="例如 1.72">
+      </div>
+    </div>
+    <button id="go">计算胜率与价格</button>
+    <div class="hint">留空日期则用全部历史；填入日期会只用该日期之前的信息（可回看历史预测）。</div>
+    <div id="result"><div class="hint" style="margin-top:16px">输入两支战队后点击按钮，这里会显示胜率、区间、理论价格与主要驱动因素。</div></div>
+  </section>
+  <section class="card news">
+    <h2>最近新闻事件（LLM 抽取）</h2>
+    <div id="news"><div class="empty">加载中…</div></div>
+  </section>
+  </div>
+  <div class="col">
+  <section class="card">
+    <h2>当前实力榜（Elo）</h2>
+    <table><thead><tr><th>#</th><th>战队</th><th class="num">Elo</th><th class="num">场次</th><th>最近比赛</th></tr></thead>
+      <tbody id="rank"></tbody></table>
+    <div class="empty" id="rankEmpty">加载中…</div>
+  </section>
+  <section class="card">
+    <h2>数据概览</h2>
+    <div class="kv" id="stats"></div>
+  </section>
+  </div>
+</main>
+
+<footer>
+  <span id="footData"></span>
+  <span>模型：Elo + 地图级 Elo + 逻辑回归（27 维特征）</span>
+  <span>价格 = 模型概率换算 + 6% 摩擦，不代表市场报价</span>
+</footer>
+
+<datalist id="teams"></datalist>
+
+<script>
+const $ = id => document.getElementById(id);
+const pct = x => (x*100).toFixed(1) + '%';
+
+async function j(url){
+  const r = await fetch(url);
+  const d = await r.json();
+  if(!r.ok) throw new Error(d.error || ('HTTP '+r.status));
+  return d;
+}
+
+async function loadTeams(){
+  const rows = await j('/api/teams?top=60');
+  const dl = $('teams');
+  dl.innerHTML = rows.map(r => `<option value="${r.team}">`).join('');
+  $('rank').innerHTML = rows.slice(0,20).map((r,i)=>`
+    <tr><td>${i+1}</td><td>${r.team}</td>
+        <td class="num">${r.elo.toFixed(0)}</td>
+        <td class="num">${r.games}</td>
+        <td>${r.last_played||'-'}</td></tr>`).join('');
+  $('rankEmpty').style.display='none';
+}
+
+async function loadStats(){
+  const s = await j('/api/stats');
+  $('stats').innerHTML = `
+    <div><b>${s.matches.toLocaleString()}</b><span>比赛</span></div>
+    <div><b>${s.teams}</b><span>战队</span></div>
+    <div><b>${s.news}</b><span>新闻</span></div>`;
+  const m = s.model || {};
+  let ll = '', label = m.kind || '-';
+  if (m.mean_log_loss) {
+    const best = Object.entries(m.mean_log_loss).sort((a,b)=>a[1]-b[1])[0];
+    if (best) { label = best[0]; ll = best[1]; }
+  }
+  $('modelInfo').textContent = `模型 ${label} · log loss ${ll||'-'} · 训练至 ${m.trained_to||'-'} · ${(m.features||[]).length} 维`;
+  $('footData').textContent = `数据 ${s.first} ~ ${s.last}`;
+}
+
+async function loadNews(){
+  try{
+    const rows = await j('/api/news?limit=12');
+    if(!rows.length){ $('news').innerHTML = '<div class="empty">暂无事件</div>'; return; }
+    $('news').innerHTML = rows.map(r=>`
+      <div class="item">
+        <span class="who">${r.team || '—'}</span>
+        <span class="badge">${r.event_type}</span>
+        <div class="ev">${(r.evidence||'').slice(0,110)}</div>
+        <div class="ev">${r.published_at?.slice(0,10) || ''}</div>
+      </div>`).join('');
+  }catch(e){ $('news').innerHTML = '<div class="empty">新闻接口不可用</div>'; }
+}
+
+$('go').onclick = async () => {
+  const a = $('teamA').value.trim(), b = $('teamB').value.trim();
+  if(!a || !b){ $('result').innerHTML = '<div class="hint" style="color:#b7791f">请填写两支战队</div>'; return; }
+  $('go').disabled = true; $('result').innerHTML = '<div class="hint">计算中…</div>';
+  try{
+    const q = new URLSearchParams({a, b, format:$('fmt').value, event:$('event').value});
+    if($('bankroll').value) q.set('bankroll', $('bankroll').value);
+    if($('oddsA').value) q.set('odds_a', $('oddsA').value);
+    if($('oddsB').value) q.set('odds_b', $('oddsB').value);
+    if($('asof').value) q.set('date', $('asof').value);
+    const d = await j('/api/predict?'+q.toString());
+    const pa = d.p_a, pb = 1-pa;
+    $('result').innerHTML = `
+      <div class="prob">
+        <div class="a" style="width:${(pa*100).toFixed(1)}%">${pct(pa)}</div>
+        <div class="b" style="width:${(pb*100).toFixed(1)}%">${pct(pb)}</div>
+      </div>
+      <div class="hint">${d.team_a} vs ${d.team_b} · ${d.format.toUpperCase()} · 95% 区间 ${pct(d.p_a_ci95[0])} ~ ${pct(d.p_a_ci95[1])}</div>
+      <div class="kv">
+        <div><b>${d.fair_odds.a}</b><span>理论价格 A</span></div>
+        <div><b>${d.offer_odds.a}</b><span>参考价 A（含 6% 摩擦）</span></div>
+        <div><b>${d.offer_odds.b}</b><span>参考价 B</span></div>
+      </div>
+      <div class="kv" style="margin-top:10px">
+        <div><b>${d.elo.a.toFixed(0)}</b><span>${d.team_a} Elo（${d.elo.games_a} 场）</span></div>
+        <div><b>${d.elo.b.toFixed(0)}</b><span>${d.team_b} Elo（${d.elo.games_b} 场）</span></div>
+        <div><b>${d.model}</b><span>使用模型</span></div>
+      </div>
+      ${renderMaps(d.maps)}
+      ${renderBets(d.bets)}
+      ${d.drivers && d.drivers.length ? `<div class="drivers">主要驱动：${d.drivers.map(x=>`<span>${x.name} ${x.value>0?'+':''}${x.value}</span>`).join('')}</div>` : ''}
+      ${(d.elo.games_a<5||d.elo.games_b<5) ? '<div class="hint" style="color:#b7791f">⚠ 有一方样本不足 5 场，区间仅供参考</div>' : ''}
+    `;
+  }catch(e){
+    $('result').innerHTML = `<div class="hint" style="color:#c53030">失败：${e.message}</div>`;
+  }finally{ $('go').disabled = false; }
+};
+
+function renderMaps(maps){
+  if(!maps || !maps.length) return '';
+  const rows = maps.map(m => {
+    const p = Number(m.p_a) || 0;
+    return `<div class="maprow"><span class="mname">${m.map}</span>
+      <span class="mbar"><i style="width:${Math.max(2, p*100).toFixed(0)}%"></i></span>
+      <span class="mpct">${(p*100).toFixed(1)}%</span></div>`;
+  }).join('');
+  return `<div class="maps"><div class="maps-title">地图推演 · 按双方各图强弱自动 ban / pick</div>${rows}</div>`;
+}
+
+function renderBets(bets){
+  if(!bets || !bets.length) return '';
+  return bets.map(b => `
+    <div class="bet">
+      <div class="bet-head">${b.side} @ ${Number(b.odds).toFixed(2)} · ${b.verdict}</div>
+      <div class="bet-grid">
+        <div><b>${b.stake ?? 0}</b><span>建议配置（${(b.stake_pct||0).toFixed(2)}% 资金）</span></div>
+        <div><b>${b.kelly_full_stake ?? 0}</b><span>满凯利金额（上限 10%）</span></div>
+        <div><b>${((b.edge||0)*100).toFixed(1)}%</b><span>模型优势</span></div>
+        <div><b>${b.conservative_stake ?? '-'}</b><span>保守（区间下界）</span></div>
+      </div>
+      ${b.edge > 0.15 ? '<div class="hint" style="color:#b7791f">⚠ 模型优势超过 15%，先核对价格是否过期、是否同一口径</div>' : ''}
+      <div class="hint">${b.reason || ''} ${b.ev !== undefined ? '期望盈利 '+b.ev : ''}
+        ${b.risk ? '· 100 注回撤中位数 '+(b.risk.median_max_dd*100).toFixed(0)+'%，破产概率 '+(b.risk.ruin_prob*100).toFixed(1)+'%' : ''}</div>
+    </div>`).join('');
+}
+
+loadTeams().catch(e=>{ $('rankEmpty').textContent = '加载失败：'+e.message; });
+loadStats().catch(()=>{});
+loadNews();
+</script>
+</body>
+</html>

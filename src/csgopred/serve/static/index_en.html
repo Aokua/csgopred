@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS2 Win Probability · csgopred</title>
+<style>
+  :root{
+    --bg:#f5faf8; --card:#ffffff; --line:#e4eeea;
+    --ink:#2f3e46; --muted:#7d8d95;
+    --mint:#8fd9c8; --mint-deep:#2f9c85; --sky:#9cc4f5;
+    --shadow:0 6px 20px rgba(47,62,70,.07);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);
+       background:
+         radial-gradient(900px 520px at 8% -10%, #e4f6ef 0%, transparent 62%),
+         radial-gradient(760px 420px at 100% 0%, #eaf2fe 0%, transparent 58%),
+         var(--bg);
+       font:14px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}
+  a{color:var(--mint-deep);text-decoration:none}
+  header{display:flex;align-items:baseline;gap:16px;padding:30px 34px 6px}
+  h1{font-size:21px;margin:0;letter-spacing:.4px;font-weight:600}
+  h1 span{color:var(--mint-deep)}
+  .sub{color:var(--muted);font-size:12px}
+  main{padding:12px 34px 46px;display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:start}
+  @media(max-width:980px){main{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+        padding:20px 22px;box-shadow:var(--shadow)}
+  .card h2{font-size:12px;margin:0 0 14px;color:var(--muted);font-weight:600;
+           letter-spacing:1.2px;text-transform:uppercase}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  input,select{width:100%;background:#fbfefd;border:1px solid var(--line);color:var(--ink);
+        border-radius:11px;padding:10px 12px;font-size:13px;outline:none;transition:.15s}
+  input:focus,select:focus{border-color:var(--mint-deep);box-shadow:0 0 0 3px rgba(47,156,133,.12)}
+  .field{flex:1;min-width:130px}
+  button{margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;cursor:pointer;
+         background:linear-gradient(90deg,var(--mint),var(--sky));color:#20423b;
+         font-weight:700;font-size:14px;box-shadow:0 8px 18px rgba(47,156,133,.18);transition:.15s}
+  button:hover{filter:brightness(1.03)}
+  button:disabled{opacity:.55;cursor:wait}
+  .prob{display:flex;height:36px;border-radius:12px;overflow:hidden;margin:16px 0 8px;border:1px solid var(--line)}
+  .prob .a{background:linear-gradient(90deg,#a9ead9,#93d2f2);display:flex;align-items:center;
+           justify-content:center;font-weight:700;color:#1f4a41}
+  .prob .b{background:#f2f7f6;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  .kv div{background:#fbfefd;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .kv b{display:block;font-size:17px;color:var(--mint-deep)}
+  .kv span{font-size:11px;color:var(--muted)}
+  .drivers{margin-top:14px;font-size:12px;color:var(--muted)}
+  .maps{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.maps-title{font-size:12px;color:var(--muted);margin-bottom:6px}
+.maprow{display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0}
+.mname{width:64px;color:var(--ink)}
+.mbar{flex:1;height:8px;background:#eef3f1;border-radius:4px;overflow:hidden}
+.mbar i{display:block;height:100%;background:linear-gradient(90deg,#8fd3bd,#6ab7a3)}
+.mpct{width:44px;text-align:right;color:var(--muted)}
+.drivers span{display:inline-block;background:#f2faf7;border:1px solid var(--line);
+        border-radius:999px;padding:3px 11px;margin:4px 5px 0 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+  tr:hover td{background:#f7fcfb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .news .item{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .news .who{color:var(--mint-deep);font-weight:600}
+  .news .ev{color:var(--muted);font-size:12px}
+  .empty{color:var(--muted);font-size:13px;padding:10px 0}
+  footer{color:var(--muted);font-size:12px;padding:0 34px 30px;display:flex;gap:26px;flex-wrap:wrap}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;background:#f2faf7;
+         border:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .bet{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:13px 15px;background:#fbfefd}
+  .bet-head{font-weight:600;color:var(--mint-deep);margin-bottom:9px}
+  .bet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .bet-grid b{display:block;font-size:16px;color:var(--ink)}
+  .bet-grid span{font-size:11px;color:var(--muted)}
+  .bet .hint{margin-top:9px;line-height:1.55}
+.lang{font-size:12px;font-weight:400;color:var(--muted);text-decoration:none;margin-left:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>CS2 <span>Win Probability</span> <a class="lang" href="/">中文</a></h1>
+  <div class="sub" id="modelInfo">Loading model info…</div>
+</header>
+
+<main>
+  <div class="col">
+  <section class="card">
+    <h2>Match prediction</h2>
+    <div class="row">
+      <div class="field">
+        <label>Team A</label>
+        <input id="teamA" list="teams" placeholder="e.g. Vitality" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Team B</label>
+        <input id="teamB" list="teams" placeholder="e.g. Spirit" autocomplete="off">
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="field">
+        <label>Format</label>
+        <select id="fmt"><option value="bo1">BO1 (1 map)</option><option value="bo3" selected>BO3 (3 maps)</option><option value="bo5">BO5 (5 maps)</option></select>
+      </div>
+      <div class="field">
+        <label>Event (optional, tier feature)</label>
+        <input id="event" placeholder="e.g. IEM Katowice 2026">
+      </div>
+      <div class="field">
+        <label>As-of date (optional)</label>
+        <input id="asof" type="date">
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="field">
+        <label>Bankroll (optional, for sizing)</label>
+        <input id="bankroll" type="number" min="0" step="100" placeholder="e.g. 10000">
+      </div>
+      <div class="field">
+        <label>Market price A (optional)</label>
+        <input id="oddsA" type="number" min="1.01" step="0.01" placeholder="e.g. 2.10">
+      </div>
+      <div class="field">
+        <label>Market price B (optional)</label>
+        <input id="oddsB" type="number" min="1.01" step="0.01" placeholder="e.g. 1.72">
+      </div>
+    </div>
+    <button id="go">Compute probability</button>
+    <div class="hint">Leave the date blank to use all history; a date restricts information to before it (useful for backtests).</div>
+    <div id="result"><div class="hint" style="margin-top:16px">Enter two teams and press the button to see probability, interval, fair price and drivers.</div></div>
+  </section>
+  <section class="card news">
+    <h2>Recent news events (LLM-extracted)</h2>
+    <div id="news"><div class="empty">Loading…</div></div>
+  </section>
+  </div>
+  <div class="col">
+  <section class="card">
+    <h2>Current rankings (Elo)</h2>
+    <table><thead><tr><th>#</th><th>Team</th><th class="num">Elo</th><th class="num">Matches</th><th>Last match</th></tr></thead>
+      <tbody id="rank"></tbody></table>
+    <div class="empty" id="rankEmpty">Loading…</div>
+  </section>
+  <section class="card">
+    <h2>Data overview</h2>
+    <div class="kv" id="stats"></div>
+  </section>
+  </div>
+</main>
+
+<footer>
+  <span id="footData"></span>
+  <span>Model: Elo + map-level Elo + logistic regression (27 features)</span>
+  <span>Price = model probability + 6% friction; not a market quote</span>
+</footer>
+
+<datalist id="teams"></datalist>
+
+<script>
+const $ = id => document.getElementById(id);
+const pct = x => (x*100).toFixed(1) + '%';
+
+async function j(url){
+  const r = await fetch(url);
+  const d = await r.json();
+  if(!r.ok) throw new Error(d.error || ('HTTP '+r.status));
+  return d;
+}
+
+async function loadTeams(){
+  const rows = await j('/api/teams?top=60');
+  const dl = $('teams');
+  dl.innerHTML = rows.map(r => `<option value="${r.team}">`).join('');
+  $('rank').innerHTML = rows.slice(0,20).map((r,i)=>`
+    <tr><td>${i+1}</td><td>${r.team}</td>
+        <td class="num">${r.elo.toFixed(0)}</td>
+        <td class="num">${r.games}</td>
+        <td>${r.last_played||'-'}</td></tr>`).join('');
+  $('rankEmpty').style.display='none';
+}
+
+async function loadStats(){
+  const s = await j('/api/stats');
+  $('stats').innerHTML = `
+    <div><b>${s.matches.toLocaleString()}</b><span>Matches</span></div>
+    <div><b>${s.teams}</b><span>Teams</span></div>
+    <div><b>${s.news}</b><span>News</span></div>`;
+  const m = s.model || {};
+  let ll = '', label = m.kind || '-';
+  if (m.mean_log_loss) {
+    const best = Object.entries(m.mean_log_loss).sort((a,b)=>a[1]-b[1])[0];
+    if (best) { label = best[0]; ll = best[1]; }
+  }
+  $('modelInfo').textContent = `Model ${label} · log loss ${ll||'-'} · trained to ${m.trained_to||'-'} · ${(m.features||[]).length} dims`;
+  $('footData').textContent = `Data ${s.first} ~ ${s.last}`;
+}
+
+async function loadNews(){
+  try{
+    const rows = await j('/api/news?limit=12');
+    if(!rows.length){ $('news').innerHTML = '<div class="empty">No events yet</div>'; return; }
+    $('news').innerHTML = rows.map(r=>`
+      <div class="item">
+        <span class="who">${r.team || '—'}</span>
+        <span class="badge">${r.event_type}</span>
+        <div class="ev">${(r.evidence||'').slice(0,110)}</div>
+        <div class="ev">${r.published_at?.slice(0,10) || ''}</div>
+      </div>`).join('');
+  }catch(e){ $('news').innerHTML = '<div class="empty">News API unavailable</div>'; }
+}
+
+$('go').onclick = async () => {
+  const a = $('teamA').value.trim(), b = $('teamB').value.trim();
+  if(!a || !b){ $('result').innerHTML = '<div class="hint" style="color:#b7791f">Please enter both teams</div>'; return; }
+  $('go').disabled = true; $('result').innerHTML = '<div class="hint">Computing…</div>';
+  try{
+    const q = new URLSearchParams({a, b, format:$('fmt').value, event:$('event').value});
+    if($('bankroll').value) q.set('bankroll', $('bankroll').value);
+    if($('oddsA').value) q.set('odds_a', $('oddsA').value);
+    if($('oddsB').value) q.set('odds_b', $('oddsB').value);
+    if($('asof').value) q.set('date', $('asof').value);
+    const d = await j('/api/predict?'+q.toString());
+    const pa = d.p_a, pb = 1-pa;
+    $('result').innerHTML = `
+      <div class="prob">
+        <div class="a" style="width:${(pa*100).toFixed(1)}%">${pct(pa)}</div>
+        <div class="b" style="width:${(pb*100).toFixed(1)}%">${pct(pb)}</div>
+      </div>
+      <div class="hint">${d.team_a} vs ${d.team_b} · ${d.format.toUpperCase()} · 95% CI ${pct(d.p_a_ci95[0])} ~ ${pct(d.p_a_ci95[1])}</div>
+      <div class="kv">
+        <div><b>${d.fair_odds.a}</b><span>Fair price A</span></div>
+        <div><b>${d.offer_odds.a}</b><span>Ref price A (6% friction)</span></div>
+        <div><b>${d.offer_odds.b}</b><span>Ref price B</span></div>
+      </div>
+      <div class="kv" style="margin-top:10px">
+        <div><b>${d.elo.a.toFixed(0)}</b><span>${d.team_a} Elo (${d.elo.games_a} matches)</span></div>
+        <div><b>${d.elo.b.toFixed(0)}</b><span>${d.team_b} Elo (${d.elo.games_b} matches)</span></div>
+        <div><b>${d.model}</b><span>Model used</span></div>
+      </div>
+      ${renderMaps(d.maps)}
+      ${renderBets(d.bets)}
+      ${d.drivers && d.drivers.length ? `<div class="drivers">Top drivers: ${d.drivers.map(x=>`<span>${x.name} ${x.value>0?'+':''}${x.value}</span>`).join('')}</div>` : ''}
+      ${(d.elo.games_a<5||d.elo.games_b<5) ? '<div class="hint" style="color:#b7791f">⚠ One side has fewer than 5 matches; the interval is indicative only</div>' : ''}
+    `;
+  }catch(e){
+    $('result').innerHTML = `<div class="hint" style="color:#c53030">Failed: ${e.message}</div>`;
+  }finally{ $('go').disabled = false; }
+};
+
+function renderMaps(maps){
+  if(!maps || !maps.length) return '';
+  const rows = maps.map(m => {
+    const p = Number(m.p_a) || 0;
+    return `<div class="maprow"><span class="mname">${m.map}</span>
+      <span class="mbar"><i style="width:${Math.max(2, p*100).toFixed(0)}%"></i></span>
+      <span class="mpct">${(p*100).toFixed(1)}%</span></div>`;
+  }).join('');
+  return `<div class="maps"><div class="maps-title">Map simulation · automatic ban/pick by relative map strength</div>${rows}</div>`;
+}
+
+function renderBets(bets){
+  if(!bets || !bets.length) return '';
+  return bets.map(b => `
+    <div class="bet">
+      <div class="bet-head">${b.side} @ ${Number(b.odds).toFixed(2)} · ${b.verdict}</div>
+      <div class="bet-grid">
+        <div><b>${b.stake ?? 0}</b><span>Suggested size (${(b.stake_pct||0).toFixed(2)}% of bankroll)</span></div>
+        <div><b>${b.kelly_full_stake ?? 0}</b><span>Full Kelly (cap 10%)</span></div>
+        <div><b>${((b.edge||0)*100).toFixed(1)}%</b><span>Model edge</span></div>
+        <div><b>${b.conservative_stake ?? '-'}</b><span>Conservative (CI lower)</span></div>
+      </div>
+      ${b.edge > 0.15 ? '<div class="hint" style="color:#b7791f">⚠ Edge above 15% — verify the price is current and from the same market</div>' : ''}
+      <div class="hint">${b.reason || ''} ${b.ev !== undefined ? 'Expected profit '+b.ev : ''}
+        ${b.risk ? '· median max drawdown over 100 bets '+(b.risk.median_max_dd*100).toFixed(0)+'%，ruin probability '+(b.risk.ruin_prob*100).toFixed(1)+'%' : ''}</div>
+    </div>`).join('');
+}
+
+loadTeams().catch(e=>{ $('rankEmpty').textContent = '加载Failed: '+e.message; });
+loadStats().catch(()=>{});
+loadNews();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-10-27T17:56:34+00:00",
+  "seed": 42,
+  "python": "3.14.6",
+  "platform": "Windows-11-10.0.26100-SP0",
+  "numpy": "2.4.6",
+  "sklearn": "1.9.0",
+  "database": {
+    "path": "data/csgopred.db",
+    "bytes": 63279104,
+    "sha256": "502f3b921afdad32c417f364acc4b9d4d76b4eb527334d9ae28c482c57e0b1da"
+  },
+  "model": {
+    "path": "data/model.pkl",
+    "bytes": 1378,
+    "sha256": "0f1294558731015c3fb71e122a050b44bc13d695d2d27eb01614e0fe917e68f2"
+  },
+  "counts": {
+    "matches": 69509,
+    "maps": 56730,
+    "news": 1097,
+    "news_events": 276,
+    "teams": 4564
+  }
+}
