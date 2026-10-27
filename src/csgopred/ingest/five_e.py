@@ -1,10 +1,10 @@
-"""5EPlay 抓取：列表走官方 JSON 接口，正文走文章页 DOM。
+"""5EPlay scraping: the list comes from the official JSON API, article bodies come from the article page DOM.
 
-接口（浏览器内 fetch，天然带 WAF cookie）：
+API (fetched inside the browser, so it carries the WAF cookies automatically):
     GET /api/article?page=N&type_id=0&time=0&order_by=0
-返回 data.list[]：title / dateline(unix) / jump_link / hits / comments。
+Returns data.list[]: title / dateline(unix) / jump_link / hits / comments.
 
-正文没有详情接口，只能打开文章页解析 .article-main。
+There is no detail API for article bodies, so the article page must be opened and .article-main parsed.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ LIST_PAGE = "https://csgo.5eplay.com/article"
 
 def list_articles(browser: Browser, pages: int = 3, since_ts: int = 0,
                   start_page: int = 1) -> list[dict]:
-    """按页拉列表，直到超过页数或早于 since_ts。"""
+    """Fetch the list page by page until the page limit is exceeded or results are older than since_ts."""
     import re
 
     import time as _t
@@ -47,7 +47,7 @@ def list_articles(browser: Browser, pages: int = 3, since_ts: int = 0,
             break
         items = data.get("data", {}).get("list", [])
         if not items:
-            # 限流：等一分钟，重试同一页（不跳过，否则会漏数据）
+            # Rate limited: wait a minute and retry the same page (do not skip, or data would be missed)
             for _ in range(3):
                 _t.sleep(60.0)
                 raw2 = browser.eval(
@@ -63,7 +63,7 @@ def list_articles(browser: Browser, pages: int = 3, since_ts: int = 0,
             if not items:
                 break
         empty_streak = 0
-        _t.sleep(1.8)  # 接口约 40 请求/分钟，2 秒一页
+        _t.sleep(1.8)  # The API allows roughly 40 requests/minute, so one page every 2 seconds
         oldest = None
         for it in items:
             ts = int(it.get("dateline") or 0)
@@ -89,7 +89,7 @@ def list_articles(browser: Browser, pages: int = 3, since_ts: int = 0,
 
 
 def fetch_body(browser: Browser, item: dict):
-    """打开文章页并复用 browser_news.wy_article 的解析。"""
+    """Open an article page and reuse the parser from browser_news.wy_article."""
     if not item.get("url"):
         return None
     return wy_article(browser, item)

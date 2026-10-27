@@ -1,4 +1,4 @@
-"""路径与全局常量。"""
+"""Paths and global constants."""
 
 from pathlib import Path
 
@@ -14,18 +14,18 @@ CONFIGS = ROOT / "configs"
 
 DB_PATH = DATA / "csgopred.db"
 
-# Elo 默认参数（可在 backtest/predict 里覆盖）
+# Default Elo parameters (can be overridden in backtest/predict)
 ELO_BASE = 1500.0
 ELO_SCALE = 400.0
 ELO_K_DEFAULT = 24.0
 ELO_K_MID = 32.0
 ELO_K_TOP = 40.0
 
-# 不活跃衰减：60 天宽限，之后半衰期 180 天回归均值
+# Inactivity decay: 60-day grace, then a 180-day half-life back toward the mean
 INACTIVE_GRACE_DAYS = 60
 INACTIVE_HALF_LIFE_DAYS = 180
 
-# 赛事级别关键词（用于 K 值分档；数据源无 tier 字段时的启发式）
+# Event-tier keywords (used to bucket K; heuristic when the data source has no tier field)
 TIER1_KEYWORDS = (
     "major", "iem", "blast", "esl pro league", "esl one", "pgl",
     "katowice", "cologne", "dreamhack masters", "epl",

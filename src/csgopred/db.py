@@ -1,8 +1,9 @@
-"""SQLite 存储层。
+"""SQLite storage layer.
 
-选择 SQLite 而非 DuckDB 的原因：Python 3.14 暂无 duckdb wheel，
-且本项目数据量（~5 万场）用 SQLite 完全够用，核心管线保持零第三方依赖
-（HLTV 抓取是可选依赖 curl_cffi，不影响回测与预测）。
+Why SQLite instead of DuckDB: there is no DuckDB wheel for Python 3.14 yet, and this project's
+data volume (~50k matches) is well within SQLite's range, so the core pipeline keeps zero
+third-party dependencies (HLTV scraping is an optional curl_cffi dependency and does not affect
+backtesting or prediction).
 """
 
 from __future__ import annotations
@@ -99,7 +100,7 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
-    """给已存在的旧库补列（幂等）。"""
+    """Add missing columns to an existing older database (idempotent)."""
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(matches)")}
     for name, ddl in (("slug", "TEXT"), ("stars", "INTEGER DEFAULT 0"),
                       ("rank_a", "INTEGER"), ("rank_b", "INTEGER")):
@@ -109,7 +110,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
 
 
 def reset(conn: sqlite3.Connection) -> None:
-    """清空业务表（保留 schema），仅用于本地重建。"""
+    """Clear the business tables (keeping the schema); for local rebuilds only."""
     for t in ("matches", "maps", "veto", "team_match_stats", "teams", "ingest_manifests"):
         conn.execute(f"DELETE FROM {t}")
     conn.commit()

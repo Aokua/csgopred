@@ -1,14 +1,14 @@
-"""HLTV 抓取（结果列表 + 比赛详情：地图比分、veto）。
+"""HLTV scraping (result list + match details: map scores, veto).
 
-为什么需要它：开源 CSV 数据集只覆盖 2019–2023 且没有地图/veto，
-而 CS2 从 2023-09 开始，必须补新数据。HLTV 有 Cloudflare，
-普通 requests 会 403；这里用 curl_cffi 的浏览器 TLS 指纹（safari17_0）
-+ 会话预热 + 限速 + 磁盘缓存来稳定抓取。仍然遵守：
-- 默认 2.5s/请求，带抖动；
-- 命中挑战页时指数退避并重建会话，最多 4 次；
-- 原始 HTML 全部缓存到 data/raw/hltv/cache，重跑不重复请求。
+Why this is needed: the open CSV datasets only cover 2019-2023 and have no maps/veto,
+while CS2 starts in 2023-09, so new data must be collected. HLTV is behind Cloudflare and
+plain requests gets a 403; this module uses curl_cffi's browser TLS fingerprint (safari17_0)
++ session warm-up + rate limiting + disk cache to scrape reliably. It still follows:
+- 2.5s per request by default, with jitter;
+- exponential backoff and session rebuild when a challenge page is hit, at most 4 attempts;
+- all raw HTML is cached under data/raw/hltv/cache, so reruns do not re-request.
 
-注意：这是个人研究用途的低频抓取，不要并发、不要绕验证码。
+Note: this is low-frequency scraping for personal research; do not run it concurrently and do not bypass captchas.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ CACHE = RAW / "hltv" / "cache"
 
 
 class HltvBlocked(RuntimeError):
-    """多次重试后仍被 Cloudflare 拦截。"""
+    """Still blocked by Cloudflare after several retries."""
 
 
 class HltvClient:
@@ -75,19 +75,19 @@ class HltvClient:
                     f.write_text(body, encoding="utf-8")
                     return body
                 last_err = f"status={r.status_code}"
-            except Exception as exc:  # 网络抖动
+            except Exception as exc:  # Network jitter
                 last_err = f"{type(exc).__name__}: {exc}"
-            # 被拦：退避 + 换会话
+            # Blocked: back off + rebuild the session
             time.sleep(8 * (attempt + 1))
             self._session = creq.Session(impersonate=self.impersonate)
         raise HltvBlocked(f"{path} 连续失败：{last_err}")
 
-    # ------------------------------------------------------------ 列表页
+    # ------------------------------------------------------------ List pages
     def results(self, offset: int = 0) -> list[dict]:
         html = self.get(f"/results?offset={offset}")
         return parse_results(html)
 
-    # ------------------------------------------------------------ 详情页
+    # ------------------------------------------------------------ Detail pages
     def match(self, match_id: str, slug: str) -> dict:
         html = self.get(f"/matches/{match_id}/{slug}")
         return parse_match(html)
@@ -188,12 +188,12 @@ def parse_match(html: str) -> dict:
             continue
         name = name_el.get_text(strip=True)
         if name in ("Default", "TBD"):
-            continue  # 弃权/未定的占位行
+            continue  # Placeholder rows for forfeits / undecided matches
         try:
             sa = int(la.get_text(strip=True))
             sb = int(rb.get_text(strip=True))
         except ValueError:
-            continue  # 未开打/弃权的地图显示 "-"，跳过
+            continue  # Maps that were not played or were forfeited show "-"; skip them
         if sa == 0 and sb == 0:
             continue
         maps.append(
@@ -216,7 +216,7 @@ def ingest_results(
     since: str | None = None,
     start_offset: int = 0,
 ) -> dict:
-    """抓结果列表并写库。返回统计。"""
+    """Scrape the result list and write it to the database. Returns statistics."""
     inserted = 0
     pages = 0
     oldest = None
@@ -229,7 +229,7 @@ def ingest_results(
                 continue
             oldest = r["date"] if oldest is None else min(oldest, r["date"])
             if (r["format"] or "").strip().lower() in ("def", "default", "-", ""):
-                continue  # 弃权/默认胜负，非真实比赛，不进模型
+                continue  # Forfeit / default win-loss, not a real match, so it is excluded from the model
             fmt, _ = parse_format(r["format"])
             ta, tb = canonical_team(r["team_a"]), canonical_team(r["team_b"])
             if ta == tb:
@@ -258,7 +258,7 @@ def ingest_results(
 
 def ingest_details(conn, client: HltvClient, limit: int = 10, since: str | None = None,
                    min_stars: int = 0) -> dict:
-    """抓比赛详情（地图比分 + veto），只处理还没有地图数据的 hltv 比赛。"""
+    """Scrape match details (map scores + veto), only for hltv matches that have no map data yet."""
     sql = """
         SELECT m.match_id, m.slug, m.start_date FROM matches m
         WHERE m.source='hltv' AND m.slug IS NOT NULL

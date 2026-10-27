@@ -1,7 +1,7 @@
-"""选手级特征：阵容强度。
+"""Player-level features: lineup strength.
 
-数据来自 Kaggle 的 cs2_all_tiers_games.csv（每图每人的 ADR / KAST / KD 差）。
-用「赛前」的滚动均值表示选手状态，再按队伍 5 人平均得到阵容强度。
+Data comes from Kaggle's cs2_all_tiers_games.csv (per-map, per-player ADR / KAST / KD differentials).
+"Pre-match" rolling means represent player form; averaging over the team's five players gives lineup strength.
 """
 
 from __future__ import annotations
@@ -73,7 +73,7 @@ class PlayerIndex:
 
     def lineup(self, players: list[tuple[str, float, float, float]], d: date
                ) -> tuple[float, float, float, int]:
-        """返回阵容赛前平均 (adr, kast, kd)，只用有 >=MIN_MAPS 记录的选手。"""
+        """Return the pre-match lineup averages (adr, kast, kd), using only players with >= MIN_MAPS records."""
         vals = [self.rating(p[0], d) for p in players]
         good = [v for v in vals if v[3] >= MIN_MAPS]
         if not good:

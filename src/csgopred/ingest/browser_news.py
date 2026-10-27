@@ -1,7 +1,7 @@
-"""用 CDP 浏览器抓新闻（处理 JS 挑战：HLTV 的 Cloudflare、5EPlay 的阿里云 WAF）。
+"""Scrape news with a CDP browser (handles JS challenges: HLTV's Cloudflare, 5EPlay's Aliyun WAF).
 
-浏览器负责「拿到渲染后的 DOM」，解析仍用 news.py 里的纯函数，
-这样离线测试和缓存复用都不依赖浏览器。
+The browser's job is to obtain the rendered DOM; parsing still uses the pure functions in news.py,
+so offline tests and cache reuse never depend on the browser.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ WY_LIST = "https://csgo.5eplay.com/article"
 
 
 def hltv_items(html: str) -> list[dict]:
-    """HLTV 归档页：链接 + 标题 + 日期（不用逐篇打开）。"""
+    """HLTV archive page: link + title + date (no need to open each article)."""
     soup = BeautifulSoup(html, "lxml")
     out = []
     for a in soup.select("a.newsline.article[href^='/news/']"):
@@ -58,7 +58,7 @@ def wy_items(html: str) -> list[dict]:
             continue
         seen.add(path)
         ts = int(m.group(2))
-        # 5EPlay 的文章 ID 前缀是秒级时间戳
+        # 5EPlay article ID prefixes are second-level timestamps
         try:
             d = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(timespec="seconds")
         except (ValueError, OSError):

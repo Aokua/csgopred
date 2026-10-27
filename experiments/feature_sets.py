@@ -1,4 +1,4 @@
-"""验证「去掉赛制赛事组」的稳健性，并给出推荐特征集。"""
+"""Validate the robustness of dropping the "format and event" feature group and produce the recommended feature set."""
 
 import json
 import pathlib

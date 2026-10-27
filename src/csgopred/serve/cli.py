@@ -1,6 +1,6 @@
-"""命令行入口。
+"""Command-line entry point.
 
-用法：
+Usage:
   python -m csgopred ingest --path data/raw/.../csgoresults.csv --source hojlund
   python -m csgopred stats
   python -m csgopred backtest --split 0.7 --report reports/M1_baseline.md
@@ -279,7 +279,7 @@ def cmd_predict(args) -> int:
         except Exception as exc:
             notes.append(f"模型加载失败（{type(exc).__name__}: {exc}），回退 Elo")
 
-    # 不确定度：扰动 Elo 特征后重算，近似 95% 区间
+    # Uncertainty: recompute after perturbing the Elo features to approximate a 95% interval
     rng = random.Random(42)
     sa = 110.0 / (1.0 + na / 5) ** 0.5 / 400.0
     sb = 110.0 / (1.0 + nb / 5) ** 0.5 / 400.0
@@ -351,7 +351,7 @@ def cmd_predict(args) -> int:
 
 
 def cmd_train(args) -> int:
-    """M2：构建特征、按时间切分对比模型、保存线上模型。"""
+    """M2: build features, compare models across time splits, save the online model."""
     import numpy as _np
     from ..features.pipeline import FEATURES as _FEATS
     from ..features.pipeline import build as _build
@@ -377,7 +377,7 @@ def cmd_train(args) -> int:
                       res[k]["metrics"]["ece"]] for k in ("elo", "lr", "hgb")],
                     ["l", "r", "r", "r", "r", "r"]))
 
-    # 选最优模型类型（按各切分平均 log loss）
+    # Pick the best model type (by mean log loss across splits)
     mean_ll = {
         k: sum(all_res[sp][k]["metrics"]["log_loss"] for sp in splits) / len(splits)
         for k in ("elo", "lr", "hgb")
@@ -386,7 +386,7 @@ def cmd_train(args) -> int:
     _out(f"\n平均 log loss: " + ", ".join(f"{k}={v:.4f}" for k, v in mean_ll.items()))
     _out(f"选用模型: {best_kind}")
 
-    # 全量重训，供 predict 使用
+    # Retrain on the full data for predict to use
     X = _ml.matrix(rows)
     y = _ml.labels(rows)
     w = _ml.time_weights(rows)
@@ -439,7 +439,7 @@ def _write_m2_report(path, all_res, splits, best_kind, mean_ll, importance, cal)
 
 
 def cmd_hltv(args) -> int:
-    """抓 HLTV：结果列表 + 可选比赛详情（地图/veto）。"""
+    """Scrape HLTV: result list + optional match details (maps/veto)."""
     from ..ingest.csv_source import _refresh_teams
     from ..ingest.hltv import HltvClient, ingest_details, ingest_results
 
@@ -464,7 +464,7 @@ def cmd_hltv(args) -> int:
 
 
 def cmd_hltv_backfill(args) -> int:
-    """无人值守的慢速回填：分批抓、被拦就冷却重试，直到到达 --since。"""
+    """Unattended slow backfill: scrape in batches, and cool down and retry when blocked, until --since is reached."""
     import time
     from ..ingest.csv_source import _refresh_teams
     from ..ingest.hltv import HltvBlocked, HltvClient, ingest_results
@@ -499,7 +499,7 @@ def cmd_hltv_backfill(args) -> int:
 
 
 def cmd_hltv_details(args) -> int:
-    """抓比赛详情（逐图比分 + veto），用于地图模型。"""
+    """Scrape match details (per-map scores + veto) for the map model."""
     import time
     from ..ingest.hltv import HltvBlocked, HltvClient, ingest_details
 
@@ -532,7 +532,7 @@ def cmd_hltv_details(args) -> int:
 
 
 def cmd_ingest_kaggle(args) -> int:
-    """导入 Kaggle 数据集（results/picks/players）。"""
+    """Import the Kaggle dataset (results/picks/players)."""
     from ..ingest.kaggle_source import ingest_kaggle
 
     conn = _conn(args)
@@ -542,7 +542,7 @@ def cmd_ingest_kaggle(args) -> int:
 
 
 def cmd_merge_teams(args) -> int:
-    """合并仅大小写不同的队名变体。"""
+    """Merge team-name variants that differ only in case."""
     from ..ingest.csv_source import _refresh_teams, merge_team_variants
 
     conn = _conn(args)
@@ -553,7 +553,7 @@ def cmd_merge_teams(args) -> int:
 
 
 def cmd_news(args) -> int:
-    """新闻抓取 / 抽取 / 概览。"""
+    """News scraping / extraction / overview."""
     import time as _time
     from ..ingest import news as _news
 
@@ -631,7 +631,7 @@ def cmd_news(args) -> int:
 
 
 def cmd_news_llm(args) -> int:
-    """LLM 事件抽取（无 key 时 --dry-run 只打印模板）。"""
+    """LLM event extraction (with no key, --dry-run only prints the template)."""
     from ..ingest.llm_extract import extract_with_llm
 
     conn = _conn(args)
@@ -647,7 +647,7 @@ _MONTHS = ["january", "february", "march", "april", "may", "june", "july",
 
 
 def _month_range(since: str):
-    """since -> 当前月，返回 ["2023-09", ...]。"""
+    """since -> current month, returns ["2023-09", ...]."""
     from datetime import date as _d
     y, m = int(since[:4]), int(since[5:7])
     today = _d.today()
@@ -661,7 +661,7 @@ def _month_range(since: str):
 
 
 def _goto_retry(b, url: str, ready: str, tries: int = 3, wait: float = 45.0) -> str:
-    """Cloudflare 挑战页检测 + 退避重试。"""
+    """Cloudflare challenge-page detection + backoff retry."""
     import time as _t
     html = ""
     for attempt in range(tries):
@@ -674,7 +674,7 @@ def _goto_retry(b, url: str, ready: str, tries: int = 3, wait: float = 45.0) -> 
 
 
 def cmd_news_browser(args) -> int:
-    """用 CDP 浏览器抓新闻（HLTV / 5EPlay），再落库。"""
+    """Scrape news with a CDP browser (HLTV / 5EPlay), then store it."""
     from ..ingest import browser_news as bn
     from ..ingest import news as _news
     from ..ingest.browser import Browser
@@ -727,7 +727,7 @@ def cmd_news_browser(args) -> int:
                 rows = [r for r in rows if bn.SIGNAL_RE.search(r["title"])]
             if args.cs_only:
                 import re as _re
-                # 排除非 CS 项目（Valorant / LoL 等），用 unicode 转义避免编码问题
+                # Exclude non-CS titles (Valorant / LoL, etc.); unicode escapes avoid encoding issues
                 exclude = _re.compile("Valorant|\u65e0\u754f\u5951\u7ea6|\u82f1\u96c4\u8054\u76df|Dota|\u5200\u5854", _re.I)
                 rows = [r for r in rows if not exclude.search(r["title"])]
             _out(f"5E 列表：{len(rows)} 条候选")
@@ -744,7 +744,7 @@ def cmd_news_browser(args) -> int:
 
 
 def cmd_news_llm(args) -> int:
-    """LLM 事件抽取（无 key 时 --dry-run 只打印模板）。"""
+    """LLM event extraction (with no key, --dry-run only prints the template)."""
     from ..ingest.llm_extract import extract_with_llm
 
     conn = _conn(args)
@@ -760,7 +760,7 @@ _MONTHS = ["january", "february", "march", "april", "may", "june", "july",
 
 
 def _month_range(since: str):
-    """since -> 当前月，返回 ["2023-09", ...]。"""
+    """since -> current month, returns ["2023-09", ...]."""
     from datetime import date as _d
     y, m = int(since[:4]), int(since[5:7])
     today = _d.today()
@@ -774,7 +774,7 @@ def _month_range(since: str):
 
 
 def _goto_retry(b, url: str, ready: str, tries: int = 3, wait: float = 45.0) -> str:
-    """Cloudflare 挑战页检测 + 退避重试。"""
+    """Cloudflare challenge-page detection + backoff retry."""
     import time as _t
     html = ""
     for attempt in range(tries):
@@ -787,7 +787,7 @@ def _goto_retry(b, url: str, ready: str, tries: int = 3, wait: float = 45.0) -> 
 
 
 def cmd_news_browser(args) -> int:
-    """用 CDP 浏览器抓新闻（HLTV / 5EPlay），再落库。"""
+    """Scrape news with a CDP browser (HLTV / 5EPlay), then store it."""
     from ..ingest import browser_news as bn
     from ..ingest import news as _news
     from ..ingest.browser import Browser
@@ -849,7 +849,7 @@ _EXCLUDE_5E = None
 
 
 def cmd_news_browser(args) -> int:
-    """CDP 浏览器抓新闻：HLTV（按月亮档）/ 5EPlay（官方 JSON 接口）。"""
+    """Scrape news with a CDP browser: HLTV (monthly archive) / 5EPlay (official JSON API)."""
     import re as _re
     from ..ingest import browser_news as bn
     from ..ingest import five_e as fe
@@ -955,7 +955,7 @@ def cmd_news_browser(args) -> int:
 
 
 def cmd_train(args) -> int:
-    """M2/M3：ElO → 特征模型 → 新闻特征消融，按时间切分评估。"""
+    """M2/M3: Elo -> feature model -> news-feature ablation, evaluated across time splits."""
     import numpy as _np
     from ..features.pipeline import ALL_FEATURES, FEATURES as BASE_FEATURES
     from ..features.pipeline import MAPSERIES_FEATURES, MAP_FEATURES
@@ -999,7 +999,7 @@ def cmd_train(args) -> int:
                       res[k]["metrics"]["ece"]] for k in keys],
                     ["l", "r", "r", "r", "r", "r"]))
 
-    # 新闻覆盖子集：全局指标会被大量无新闻比赛稀释
+    # News-covered subset: global metrics get diluted by the many matches without news
     if news:
         from ..eval.metrics import summarize as _summ
         for sp in splits:
@@ -1018,7 +1018,7 @@ def cmd_train(args) -> int:
                 line.append(f"{key}: logloss={m['log_loss']:.4f} acc={m['accuracy']:.3f}")
             _out("\n" + "  ".join(line))
 
-    # 选模：在 lr / lr_news / hgb 之间按平均 log loss
+    # Model selection: among lr / lr_news / hgb, by mean log loss
     candidates = [k for k in ("lr", "lr_maps", "lr_news", "hgb", "hgb_news")
                   if all(k in results[s] for s in splits)]
     mean_ll = {k: sum(results[s][k]["metrics"]["log_loss"] for s in splits) / len(splits) for k in candidates}
@@ -1082,7 +1082,7 @@ def _write_m3_report(path, results, splits, best, mean_ll, covered, importance) 
 
 
 def cmd_news_bodies(args) -> int:
-    """给只存了标题的新闻补正文（5E）。"""
+    """Backfill bodies for news items that only have titles (5E)."""
     from ..ingest import browser_news as bn
     from ..ingest import five_e as fe
     from ..ingest.browser import Browser
@@ -1124,7 +1124,7 @@ def cmd_news_bodies(args) -> int:
 
 
 def cmd_market(args) -> int:
-    """M4：导入赔率并做市场对比（CLV / ROI / 校准）。"""
+    """M4: import odds and run the market comparison (CLV / ROI / calibration)."""
     from ..eval.market_eval import evaluate, load_odds_csv, store_odds
 
     conn = _conn(args)
@@ -1139,7 +1139,7 @@ def cmd_market(args) -> int:
 
 
 def cmd_serve(args) -> int:
-    """启动 Web 界面。"""
+    """Start the web interface."""
     from .api import run
 
     run(port=args.port, host=args.host)
@@ -1147,7 +1147,7 @@ def cmd_serve(args) -> int:
 
 
 def cmd_daily(args) -> int:
-    """每日更新：抓新赛果 ->（可选）重训 -> 写日报。"""
+    """Daily update: scrape new results -> (optional) retrain -> write the daily report."""
     import time as _t
     from ..features.pipeline import FEATURES, build
     from ..models import ml
@@ -1199,7 +1199,7 @@ def cmd_daily(args) -> int:
 
 
 def cmd_hltv_details_browser(args) -> int:
-    """用浏览器抓 HLTV 地图比分/veto（绕过 Cloudflare）。"""
+    """Scrape HLTV map scores/veto with a browser (to get past Cloudflare)."""
     from ..ingest.hltv_browser_details import crawl
 
     conn = _conn(args)
@@ -1210,7 +1210,7 @@ def cmd_hltv_details_browser(args) -> int:
 
 
 def cmd_liquipedia(args) -> int:
-    """从 Liquipedia 回填地图比分（2023+）。"""
+    """Backfill map scores from Liquipedia (2023+)."""
     import time as _t
     from ..ingest import liquipedia as lq
 

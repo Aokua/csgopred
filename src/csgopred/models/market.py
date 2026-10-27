@@ -1,12 +1,12 @@
-"""M4：赔率与市场评估。
+"""M4: odds and market evaluation.
 
-包含：
-- 去水（proportional / shin）
-- CLV（相对收盘线的赔率优势）
-- 凯利下注与 ROI 模拟
-- 模型 vs 市场的 log loss / Brier 对比
+Includes:
+- De-vigging (proportional / shin)
+- CLV (odds edge relative to the closing line)
+- Kelly staking and ROI simulation
+- Model vs market log loss / Brier comparison
 
-赔率数据来源由调用方提供（CSV 或数据库），本模块不绑定抓取方式。
+Odds data is supplied by the caller (CSV or database); this module does not bind a scraping method.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ def implied(odds: float) -> float:
 
 
 def devig_proportional(odds_a: float, odds_b: float) -> tuple[float, float]:
-    """按比例去水：q_i = (1/o_i) / Σ(1/o_j)。"""
+    """Proportional de-vigging: q_i = (1/o_i) / sum(1/o_j)."""
     ia, ib = implied(odds_a), implied(odds_b)
     s = ia + ib
     if s <= 0:
@@ -29,7 +29,7 @@ def devig_proportional(odds_a: float, odds_b: float) -> tuple[float, float]:
 
 
 def devig_shin(odds_a: float, odds_b: float, iters: int = 50) -> tuple[float, float]:
-    """Shin 去水（两路盘），考虑内幕交易比例 z。"""
+    """Shin de-vigging (two-way market), accounting for the insider-trading proportion z."""
     ia, ib = implied(odds_a), implied(odds_b)
     total = ia + ib
     if total <= 1.0 or ia <= 0 or ib <= 0:
@@ -41,7 +41,7 @@ def devig_shin(odds_a: float, odds_b: float, iters: int = 50) -> tuple[float, fl
         f = pa + pb - 1.0
         if abs(f) < 1e-10:
             break
-        # 简单二分更新 z
+        # Simple bisection update for z
         z = min(max(z + 0.01 * (1 if f > 0 else -1), 0.0), 0.5)
     pa = (math.sqrt(z * z + 4 * (1 - z) * ia * ia / total) - z) / (2 * (1 - z))
     pb = (math.sqrt(z * z + 4 * (1 - z) * ib * ib / total) - z) / (2 * (1 - z))
@@ -74,7 +74,7 @@ def kelly(p: float, odds: float, fraction: float = 0.25) -> float:
 
 
 def clv(model_p: float, closing_odds: float) -> float:
-    """CLV 的一种定义：log(模型公平赔率 / 收盘赔率)。正值表示拿到比收盘更好的价格。"""
+    """One definition of CLV: log(model fair odds / closing odds). A positive value means a better price than the close."""
     fair = 1.0 / max(min(model_p, 1 - 1e-6), 1e-6)
     if closing_odds <= 1.0:
         return 0.0

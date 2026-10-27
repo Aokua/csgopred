@@ -1,9 +1,9 @@
-"""两个改动的验证实验：
+"""Validation experiment for two changes:
 
-1) 按地图数（BO1/BO3/BO5）分别建模地图克制，而不是只用当前赛制；
-2) 分析师效应（近期输给同一对手后再次相遇是否提升胜率）。
+1) Model map counter-picks separately by series length (BO1/BO3/BO5) instead of only the current format;
+2) Analyst effect (does a team's win rate improve when it meets the same opponent again soon after losing?).
 
-输出：描述统计 + 特征组消融。
+Output: descriptive statistics + feature-group ablation.
 """
 
 import json
@@ -29,7 +29,7 @@ SPLITS = ["2025-08-01", "2026-09-01"]
 
 
 def add_format_features(rows, maps):
-    """为每场比赛计算 BO1/BO3/BO5 三种赛制下的系列赛概率。"""
+    """Compute series probabilities under BO1/BO3/BO5 for every match."""
     mm = MapModel()
     for r in rows:
         f = r["features"]
@@ -44,7 +44,7 @@ def add_format_features(rows, maps):
 
 
 def add_revenge_features(rows):
-    """同一对队伍的最近一次交手：间隔、上次胜负、连胜。"""
+    """Most recent meeting between the same pair of teams: gap, previous result, win streak."""
     last: dict[tuple, dict] = {}
     for r in rows:
         f = r["features"]
@@ -65,7 +65,7 @@ def add_revenge_features(rows):
             f["rev_lost_a"] = a_lost
             f["rev_lost_b"] = b_lost
             f["rev_lost_a_recent"] = a_lost if gap <= 90 else 0.0
-            # 连胜：同一边连续赢的次数（正= A 连胜）
+            # Win streak: consecutive wins by the same side (positive = A is streaking)
             prev_streak = prev.get("streak", 0)
             won = r["y"] == 1
             if prev["winner"] == r["team_a"]:
@@ -79,14 +79,14 @@ def add_revenge_features(rows):
 
 
 def rematch_stats(rows):
-    """再相遇时，上次赢家是否更容易继续赢？"""
+    """On a rematch, is the previous winner more likely to win again?"""
     total = repeat = 0
     exp_sum = 0.0
     gaps = []
     for r in rows:
         if not r["features"].get("rev_gap", 1.0) < 1.0:
             continue
-        # 用 rev_lost_* 反推：上次赢家
+        # Recover the previous winner from rev_lost_*
         if r["features"]["rev_lost_a"] > 0.5:
             prev_winner_is_a = False
         elif r["features"]["rev_lost_b"] > 0.5:
@@ -152,7 +152,7 @@ def main() -> None:
         print(f"{name:<14} k={len(feats):2d}  " +
               "  ".join(f"{line['splits'][sp]['log_loss']:.5f}" for sp in SPLITS))
 
-    # 分赛制看地图特征的价值
+    # Value of map features by series format
     for fmt_key in ("is_bo1", "is_bo5"):
         sub = [r for r in rows if r["features"].get(fmt_key, 0) > 0.5]
         print(f"\n{fmt_key} 子集 n={len(sub)}")

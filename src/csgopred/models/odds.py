@@ -1,4 +1,4 @@
-"""赔率换算：公平赔率、加水、分数凯利。"""
+"""Odds conversion: fair odds, margin addition, fractional Kelly."""
 
 from __future__ import annotations
 
@@ -8,11 +8,12 @@ def fair_odds(p: float) -> float:
 
 
 def offer_odds(p: float, margin: float = 0.06) -> tuple[float, float]:
-    """按比例法加水。
+    """Add margin by the proportional method.
 
-    q_i = p_i * (1 + margin)，两路盘 q_a + q_b = 1 + margin，赔率 = 1/q。
-    注意：比例法会让热门和冷门承担相同水位，真实盘口通常对冷门抽更多水，
-    需要更精细时再换 Shin 方法（见 docs/技术规划.md §7.2）。
+    q_i = p_i * (1 + margin); for a two-way market q_a + q_b = 1 + margin, and odds = 1/q.
+    Note: the proportional method makes favourites and underdogs carry the same margin, while real
+    markets usually take more margin on underdogs; switch to the Shin method when finer precision is
+    needed (see docs/技术规划.md, section 7.2).
     """
     qa = p * (1.0 + margin)
     qb = (1.0 - p) * (1.0 + margin)
@@ -28,7 +29,7 @@ def overround(odds_a: float, odds_b: float) -> float:
 
 
 def kelly_fraction(p: float, odds: float, fraction: float = 0.25) -> float:
-    """分数凯利；返回建议下注比例（可为 0）。"""
+    """Fractional Kelly; returns the suggested stake fraction (may be 0)."""
     b = odds - 1.0
     if b <= 0:
         return 0.0

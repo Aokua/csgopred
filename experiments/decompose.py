@@ -1,9 +1,9 @@
-"""信息源贡献分解实验。
+"""Information-source contribution decomposition experiment.
 
-输出：
-- 嵌套递增（逐组加入）的对数损失曲线
-- 留一法（从全模型去掉一组）的边际贡献
-用于论文第 5.5 节与图 3。
+Outputs:
+- Nested incremental (adding one group at a time) log-loss curve
+- Leave-one-out (dropping one group from the full model) marginal contributions
+Used for Section 5.5 of the paper and Figure 3.
 """
 
 import json
@@ -53,11 +53,11 @@ def main() -> None:
 
     result = {"nested": [], "leave_one_out": [], "splits": SPLITS, "elo": {}, "full": {}}
 
-    # 基准：Elo 映射
+    # Baseline: Elo mapping
     for sp in SPLITS:
         result["elo"][sp] = split_eval(rows, sp, "elo")["metrics"]
 
-    # 嵌套递增
+    # Nested incremental
     current: list[str] = []
     for g in order:
         current = current + GROUPS[g]
@@ -69,7 +69,7 @@ def main() -> None:
         print(f"nested +{g:<6} k={len(current):2d} ll={entry['splits'][SPLITS[0]]['log_loss']:.5f}/"
               f"{entry['splits'][SPLITS[1]]['log_loss']:.5f}  [{time.time()-t0:.0f}s]")
 
-    # 全模型与留一
+    # Full model and leave-one-out
     for sp in SPLITS:
         result["full"][sp] = split_eval(rows, sp, "lr", feats=full)["metrics"]
     for g in order:

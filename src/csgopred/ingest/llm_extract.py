@@ -1,10 +1,11 @@
-"""LLM 事件抽取（OpenAI 兼容接口）。
+"""LLM event extraction (OpenAI-compatible API).
 
-没有 API key 时只做 dry-run：打印将要发送的 prompt 与文章，便于先校验模板。
-配置（环境变量）：
-  OPENAI_API_KEY   必填
-  OPENAI_BASE_URL  默认 https://api.openai.com/v1
-  OPENAI_MODEL     默认 gpt-4o-mini
+Without an API key only a dry run is performed: the prompt and article that would be sent are printed,
+so the template can be checked first.
+Configuration (environment variables):
+  OPENAI_API_KEY   required
+  OPENAI_BASE_URL  default https://api.openai.com/v1
+  OPENAI_MODEL     default gpt-4o-mini
 """
 
 from __future__ import annotations
@@ -129,7 +130,7 @@ def extract_with_llm(conn: sqlite3.Connection, limit: int = 10, dry_run: bool = 
         for ev in data.get("events", []) or []:
             quote = (ev.get("evidence_quote") or "").strip()
             if not quote or quote not in (r["body"] or "") and quote not in (r["title"] or ""):
-                continue  # 证据必须能在原文找到
+                continue  # The evidence must be findable in the source text
             team = ev.get("team")
             if not team:
                 found = _find_teams(quote, names)

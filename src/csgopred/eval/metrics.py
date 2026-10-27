@@ -1,4 +1,4 @@
-"""评估指标：log loss / Brier / 准确率 / 校准。"""
+"""Evaluation metrics: log loss / Brier / accuracy / calibration."""
 
 from __future__ import annotations
 

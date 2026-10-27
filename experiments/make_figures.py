@@ -1,4 +1,4 @@
-"""生成论文图件（matplotlib，中文字体）。"""
+"""Generate paper figures (matplotlib, Chinese fonts)."""
 
 import json
 import pathlib

@@ -1,7 +1,7 @@
-"""特征工程：按时间顺序推进，任何时点只用「此前」的信息。
+"""Feature engineering: advance chronologically; at any point in time only "earlier" information is used.
 
-设计成 FeatureBuilder 而不是一次性 pandas 变换，是为了让训练和线上预测
-走完全相同的代码路径——回测里怎么算，predict 就怎么算。
+This is a FeatureBuilder rather than a one-shot pandas transform so that training and online
+prediction follow exactly the same code path -- predict computes whatever the backtest computes.
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ class FeatureBuilder:
         self.last: dict[str, date] = {}
         self.h2h: dict[tuple, list[int]] = defaultdict(lambda: [0, 0])
 
-    # ---------------- 状态查询 ----------------
+    # ---------------- State queries ----------------
     def _form(self, team: str, n: int) -> float:
         items = list(self.recent.get(team, ()))[-n:]
         if len(items) < 3:
@@ -101,7 +101,7 @@ class FeatureBuilder:
         n = w0 + w1
         return (wins_a + 2.0) / (n + 4.0) - 0.5
 
-    # ---------------- 单场特征 ----------------
+    # ---------------- Single-match features ----------------
     def features(self, team_a: str, team_b: str, d: date, fmt: str, event: str) -> dict:
         ra = self.elo.rating(team_a, d)
         rb = self.elo.rating(team_b, d)
@@ -144,7 +144,7 @@ class FeatureBuilder:
             "elo_bo3": (ra - rb) / 400.0 * (1.0 if fmt == "bo3" else 0.0),
         }
 
-    # ---------------- 状态更新 ----------------
+    # ---------------- State updates ----------------
     def update(self, match: dict, y: float, exp: float) -> None:
         a, b = match["team_a"], match["team_b"]
         d = date.fromisoformat(match["start_date"])
@@ -161,7 +161,7 @@ class FeatureBuilder:
 
 
 def replay(matches: list[dict], news: dict | None = None) -> FeatureBuilder:
-    """只推进状态、不算特征（给 predict 用）。"""
+    """Advance state only, without computing features (used by predict)."""
     fb = FeatureBuilder(news)
     for m in matches:
         d = date.fromisoformat(m["start_date"])
@@ -176,9 +176,9 @@ def replay(matches: list[dict], news: dict | None = None) -> FeatureBuilder:
 def build(matches: list[dict], news: dict | None = None,
           maps: dict[str, list[tuple[str, str]]] | None = None,
           lineups: dict[str, dict] | None = None) -> list[dict]:
-    """把赛果序列变成特征行（每行都只含赛前信息）。
+    """Turn a result sequence into feature rows (each row contains pre-match information only).
 
-    maps: match_id -> [(map_name, winner_side)]，用于地图特征。
+    maps: match_id -> [(map_name, winner_side)], used for map features.
     """
     fb = FeatureBuilder(news)
     mi = MapIndex()
@@ -252,7 +252,7 @@ def build(matches: list[dict], news: dict | None = None,
 
 def map_features_asof(matches: list[dict], maps: dict[str, list[tuple[str, str]]],
                       when, team_a: str, team_b: str, fmt: str, elo) -> dict:
-    """给单场预测补地图特征：只用 when 之前的地图结果。"""
+    """Add map features for a single-match prediction: only map results before when are used."""
     mi = MapIndex()
     mm = MapModel()
     for m in matches:
@@ -282,7 +282,7 @@ def map_features_asof(matches: list[dict], maps: dict[str, list[tuple[str, str]]
 
 def map_breakdown_asof(matches: list[dict], maps: dict[str, list[tuple[str, str]]],
                        when, team_a: str, team_b: str, fmt: str, elo) -> list[dict]:
-    """返回 veto 模拟选出的地图及每张图的胜率（只用 when 之前的数据）。"""
+    """Return the maps chosen by the veto simulation and each map's win probability (only data before when)."""
     mm = MapModel()
     for m in matches:
         d = date.fromisoformat(m["start_date"])

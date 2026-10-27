@@ -1,11 +1,12 @@
-"""M2 评估：按时间切分的模型对比。
+"""M2 evaluation: model comparison across time-based splits.
 
-对比三档：
-- elo:     只用 Elo 差的一维逻辑回归（M1 基线）
-- lr:      全部特征 + L2 逻辑回归
-- hgb:     全部特征 + HistGradientBoosting（+ Platt 校准）
+Three tiers are compared:
+- elo:     one-dimensional logistic regression on the Elo difference only (M1 baseline)
+- lr:      all features + L2 logistic regression
+- hgb:     all features + HistGradientBoosting (+ Platt calibration)
 
-测试集永远在训练集之后，训练样本按时间衰减加权（半衰期 540 天）。
+The test set always follows the training set, and training samples are weighted by time decay
+(540-day half-life).
 """
 
 from __future__ import annotations

@@ -1,8 +1,8 @@
-"""导入 Kaggle「Counter-Strike Pro Matches」的地图级数据（2023+）。
+"""Import map-level data from Kaggle's "Counter-Strike Pro Matches" (2023+).
 
-数据集：ektarr/counter-strike-pro-matches
-每行是一张地图（含比分）或一场比赛汇总（map_name 为空）。
-附带选手级统计，后续可用于阵容强度特征。
+Dataset: ektarr/counter-strike-pro-matches
+Each row is either a single map (with scores) or a match summary (empty map_name).
+Player-level statistics are included and can later feed lineup-strength features.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ _SUFFIX = re.compile(r"\b(esports?|gaming|team|club|esport|e-?sports|cs2?|gg)\b"
 
 
 def norm(name: str) -> str:
-    """宽松归一：去后缀、去标点、小写。用于跨数据源匹配队名。"""
+    """Loose normalization: strip suffixes and punctuation, lowercase. Used to match team names across data sources."""
     s = _SUFFIX.sub(" ", name or "")
     s = re.sub(r"[^a-z0-9]", "", s.lower())
     return s or re.sub(r"[^a-z0-9]", "", (name or "").lower())
@@ -29,7 +29,7 @@ PATH = "data/raw/kaggle_pro/cs2_all_tiers_games.csv"
 
 
 def load_rows(path: str = PATH) -> dict[str, dict]:
-    """按 match_id 聚合，只保留有地图的行。"""
+    """Group by match_id and keep only rows that have a map."""
     by_match: dict[str, dict] = {}
     with open(path, encoding="utf-8") as f:
         for row in csv.DictReader(f):
@@ -58,7 +58,7 @@ def load_rows(path: str = PATH) -> dict[str, dict]:
 
 def ingest(conn, path: str = PATH, dry: bool = False) -> dict:
     data = load_rows(path)
-    # 建立我们的比赛索引
+    # Build our match index
     idx: dict[tuple[str, str, str], str] = {}
     rows = conn.execute(
         "SELECT match_id, start_date, team_a, team_b FROM matches WHERE start_date >= '2023-01-01'"
@@ -100,7 +100,7 @@ def ingest(conn, path: str = PATH, dry: bool = False) -> dict:
 def build_lineups(conn, path: str = PATH) -> dict[str, dict]:
     """our_match_id -> {"a": [...], "b": [...], "date": date}
 
-    用与地图导入相同的「日期 ±1 + 宽松队名」匹配。
+    Uses the same "date +/-1 + loose team name" matching as the map import.
     """
     from ..features.player_features import load_players
 
@@ -126,7 +126,7 @@ def build_lineups(conn, path: str = PATH) -> dict[str, dict]:
         if not hit:
             continue
         our_id, na, nb = hit
-        # 判断 dataset 的 team1 对应我们的哪一边
+        # Determine which of our sides the dataset's team1 corresponds to
         if norm(canonical_team(rec["team1"])) == na:
             first, second = rec["p1"], rec["p2"]
         else:

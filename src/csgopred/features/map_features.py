@@ -1,7 +1,7 @@
-"""地图级特征：队伍在各张图上的近期胜率。
+"""Map-level features: each team's recent win rate on each map.
 
-数据来自 maps 表（2015–2020 HLTV + 2023+ Kaggle）。
-只使用比赛日之前的地图结果，按半衰期衰减。
+Data comes from the maps table (2015-2020 HLTV + 2023+ Kaggle).
+Only map results from before the match date are used, decayed by half-life.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ class MapIndex:
         self.rec: dict[str, list[tuple[date, int]]] = defaultdict(list)
 
     def wr(self, team: str, d: date) -> tuple[float, int]:
-        """返回 (胜率-0.5, 样本数)，窗口 365 天，半衰期 120 天。"""
+        """Return (win rate - 0.5, sample count) over a 365-day window with a 120-day half-life."""
         items = self.rec.get(team)
         if not items:
             return 0.0, 0

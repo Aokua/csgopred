@@ -1,4 +1,4 @@
-"""再相遇的校准检验：Elo 在再相遇时是否过度自信？"""
+"""Calibration check on rematches: is Elo overconfident on rematches?"""
 
 import math
 import sys
@@ -37,7 +37,7 @@ def main() -> None:
         f["rematch_x_elo"] = f["rematch"] * f["elo_diff"]
         last[key] = d
 
-    # 描述：全样本 vs 再相遇，按热门/冷门看实际胜率
+    # Descriptive: full sample vs rematches, actual win rate for favourites and underdogs
     for label, cond in (("全部比赛", lambda r: True),
                         ("再相遇(<=365天)", lambda r: r["features"]["rematch"] > 0.5)):
         sub = [r for r in rows if cond(r)]

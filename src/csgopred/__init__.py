@@ -1,6 +1,6 @@
-"""csgopred —— CS2/CS:GO 胜率与赔率模型（研究用途）。
+"""csgopred - CS2/CS:GO win-probability and odds model (research use).
 
-核心管线只用标准库，保证在任意 Python 3.10+ 环境可直接运行。
+The core pipeline uses only the standard library, so it runs directly on any Python 3.10+ environment.
 """
 
 __version__ = "0.1.0"

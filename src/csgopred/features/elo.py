@@ -1,10 +1,10 @@
-"""地图级 / 队伍级 Elo。
+"""Map-level / team-level Elo.
 
-设计要点：
-1. 不活跃衰减在「读取时」计算，并写回基准值，避免衰减被下一次更新覆盖掉。
-2. K 值按赛事级别启发式分档；净胜图数给小幅加成。
-3. 所有状态都在内存中按时间顺序推进——回测和线上预测走同一套代码，
-   这是保证「回测数字可信」的前提。
+Design notes:
+1. Inactivity decay is applied at read time and written back as the baseline, so the decay is not overwritten by the next update.
+2. K is bucketed heuristically by event tier; the margin of victory adds a small bonus.
+3. All state advances chronologically in memory -- backtests and online prediction run the same code,
+   which is the prerequisite for backtest numbers that can be trusted.
 """
 
 from __future__ import annotations
@@ -24,9 +24,9 @@ from ..config import (
 )
 
 
-# 超参数（2026-10-27 在 2015–2026 全量数据上网格搜索，两个时间切分一致更优）
-ELO_K_SCALE = 1.6       # K 值整体放大：CS 强弱变化比棋类快
-ELO_MARGIN_SCALE = 3.0  # 净胜分加成放大：2-0 比 2-1 的信息量更大
+# Hyperparameters (grid-searched on all 2015-2026 data on 2026-10-27; both time splits agreed it was better)
+ELO_K_SCALE = 1.6       # Scale K up overall: CS strength shifts faster than in chess
+ELO_MARGIN_SCALE = 3.0  # Amplify the margin-of-victory bonus: 2-0 carries more information than 2-1
 
 
 def expected_score(rating_a: float, rating_b: float, scale: float = ELO_SCALE) -> float:
@@ -54,7 +54,7 @@ def k_factor(event: str, fmt: str) -> float:
     elif any(k in e for k in TIER1_KEYWORDS):
         base = ELO_K_MID
     elif fmt == "bo1":
-        base = ELO_K_DEFAULT * 0.75  # bo1 噪声大，更新更保守
+        base = ELO_K_DEFAULT * 0.75  # bo1 is noisy, so update more conservatively
     else:
         base = ELO_K_DEFAULT
     return base * ELO_K_SCALE
@@ -65,7 +65,7 @@ def margin_multiplier(score_a: int, score_b: int, fmt: str) -> float:
     if fmt in ("bo3", "bo5"):
         base = min(1.0 + 0.15 * diff, 1.4)
     else:
-        base = min(1.0 + 0.15 * (diff / 8.0), 1.4)  # bo1 用回合差比例
+        base = min(1.0 + 0.15 * (diff / 8.0), 1.4)  # bo1 uses the round-difference ratio
     return 1.0 + ELO_MARGIN_SCALE * (base - 1.0)
 
 
@@ -77,7 +77,7 @@ class EloModel:
     last_played: dict[str, date] = field(default_factory=dict)
     games: dict[str, int] = field(default_factory=dict)
 
-    # ---- 读取 ----
+    # ---- Read ----
     def rating(self, team: str, asof: date | None = None) -> float:
         base = self.ratings.get(team, self.mean)
         last = self.last_played.get(team)
@@ -88,7 +88,7 @@ class EloModel:
     def n_games(self, team: str) -> int:
         return self.games.get(team, 0)
 
-    # ---- 单场推进 ----
+    # ---- Advance a single match ----
     def step(self, match: dict, asof: date | None = None) -> dict:
         a, b = match["team_a"], match["team_b"]
         when = asof or date.fromisoformat(match["start_date"])
@@ -101,7 +101,7 @@ class EloModel:
         k = k_factor(match.get("event", ""), match.get("format", "bo3"))
         mov = margin_multiplier(match["score_a"], match["score_b"], match.get("format", "bo3"))
 
-        # 衰减后的值作为新的基准，再叠加更新
+        # The decayed value becomes the new baseline, then the update is applied
         self.ratings[a] = ra + k * mov * (sa - ea)
         self.ratings[b] = rb + k * mov * ((1.0 - sa) - (1.0 - ea))
         self.last_played[a] = when
@@ -120,7 +120,7 @@ class EloModel:
             "y": sa,
         }
 
-    # ---- 序列化 ----
+    # ---- Serialization ----
     def snapshot(self, asof: date | None = None) -> list[dict]:
         rows = []
         for team, r in self.ratings.items():

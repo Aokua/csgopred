@@ -1,14 +1,15 @@
-"""Kaggle「CS:GO Professional Matches」导入（results / picks / players）。
+"""Import Kaggle's "CS:GO Professional Matches" (results / picks / players).
 
-数据集：mateusdmachado/csgo-professional-matches（需 Kaggle token）
-覆盖 2015-10 ~ 2020-03，价值在于：
-- 逐图比分（results.csv）：地图模型的基础；
-- veto 顺序（picks.csv）：唯一现成的 veto 数据源；
-- 选手逐场 rating（players.csv）：阵容强度的代理特征；
-- 当时的 HLTV 排名（rank_1/rank_2）：避免「用今天的排名回填历史」。
+Dataset: mateusdmachado/csgo-professional-matches (requires a Kaggle token)
+Covers 2015-10 to 2020-03; its value lies in:
+- per-map scores (results.csv): the foundation of the map model;
+- veto order (picks.csv): the only readily available veto data source;
+- per-match player ratings (players.csv): proxy features for lineup strength;
+- contemporaneous HLTV ranks (rank_1/rank_2): avoids backfilling history with today's ranks.
 
-去重策略：优先把地图/选手数据挂到库里已有的同一天同两队比赛上（HLTV 记录），
-否则新建 `kaggle:<id>` 记录。这样训练时用 HLTV 的赛果，又能吃到 Kaggle 的地图信息。
+Deduplication strategy: prefer attaching map/player data to an existing match in the database
+with the same day and both teams (an HLTV record); otherwise create a "kaggle:<id>" record.
+Training then uses HLTV results while still benefiting from Kaggle's map information.
 """
 
 from __future__ import annotations
@@ -44,7 +45,7 @@ def _i(x: str | None) -> int | None:
 
 
 def build_match_index(conn: sqlite3.Connection) -> dict[tuple, str]:
-    """(日期, 队伍集合) -> match_id，用于把 Kaggle 地图数据挂到已有比赛上。"""
+    """(date, team set) -> match_id, used to attach Kaggle map data to existing matches."""
     idx: dict[tuple, str] = {}
     for r in conn.execute("SELECT match_id, start_date, team_a, team_b FROM matches"):
         key = (r["start_date"], frozenset((r["team_a"], r["team_b"])))
@@ -68,7 +69,7 @@ def ingest_kaggle(conn: sqlite3.Connection, base_dir: str | Path, source: str = 
 
     stats = {"matches_new": 0, "matches_attached": 0, "maps": 0, "veto": 0, "team_stats": 0}
 
-    # ---------------- results：逐图 ----------------
+    # ---------------- results: per map ----------------
     by_match: dict[str, list[dict]] = defaultdict(list)
     with open(base / "results.csv", encoding="utf-8", errors="replace", newline="") as f:
         for row in csv.DictReader(f):
@@ -85,7 +86,7 @@ def ingest_kaggle(conn: sqlite3.Connection, base_dir: str | Path, source: str = 
         ta, tb = canonical_team(r0["team_1"]), canonical_team(r0["team_2"])
         if ta == tb:
             continue
-        # 先确定实际打了几张图：单图场次里 map_wins_* 存的是回合比分，不是系列赛比分
+        # First determine how many maps were actually played: for single-map matches, map_wins_* holds the round score, not the series score
         distinct = {_norm_map(mr.get("_map", "")) for mr in rows if mr.get("_map")}
         distinct.discard("")
         n_maps = len(distinct)
@@ -101,7 +102,7 @@ def ingest_kaggle(conn: sqlite3.Connection, base_dir: str | Path, source: str = 
             wins1 = _i(r0.get("map_wins_1")) or 0
             wins2 = _i(r0.get("map_wins_2")) or 0
             if wins1 == wins2:
-                # 列缺失时用地图胜负回退
+                # Fall back to map wins/losses when the column is missing
                 wins1 = sum(1 for mr in rows if (_i(mr.get("map_winner")) or 0) == 1)
                 wins2 = sum(1 for mr in rows if (_i(mr.get("map_winner")) or 0) == 2)
             if wins1 == wins2:
@@ -151,7 +152,7 @@ def ingest_kaggle(conn: sqlite3.Connection, base_dir: str | Path, source: str = 
     stats["maps"] += len(map_rows)
     conn.commit()
 
-    # ---------------- picks：veto ----------------
+    # ---------------- picks: veto ----------------
     veto_rows = []
     with open(base / "picks.csv", encoding="utf-8", errors="replace", newline="") as f:
         for row in csv.DictReader(f):
@@ -185,7 +186,7 @@ def ingest_kaggle(conn: sqlite3.Connection, base_dir: str | Path, source: str = 
     stats["veto"] += len(veto_rows)
     conn.commit()
 
-    # ---------------- players：队伍强度 ----------------
+    # ---------------- players: team strength ----------------
     ratings: dict[tuple, list[float]] = defaultdict(list)
     events: dict[str, str] = {}
     with open(base / "players.csv", encoding="utf-8", errors="replace", newline="") as f:

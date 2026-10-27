@@ -1,12 +1,12 @@
-"""新闻事件 → 特征。
+"""News events -> features.
 
-思路：事件是点过程，按半衰期衰减成「截至某日的信号强度」。
-只进模型的特征，不直接改概率；权重由模型学。
+Idea: events form a point process, decayed by half-life into a "signal strength as of a date".
+These are model features only and never change probabilities directly; the model learns the weights.
 
-特征：
-- news_net_a / news_net_b：带方向的衰减和（正=利好，负=利空）
-- news_cnt_a / news_cnt_b：事件条数（衰减后）
-- news_net_diff：A 减 B
+Features:
+- news_net_a / news_net_b: signed decayed sum (positive = good news, negative = bad news)
+- news_cnt_a / news_cnt_b: event count (after decay)
+- news_net_diff: A minus B
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ WINDOW_DAYS = 120
 
 
 def load_events(conn: sqlite3.Connection, extractor: str = "llm") -> dict[str, list[tuple[date, float]]]:
-    """team -> [(date, signed_value)]，按日期排序。"""
+    """team -> [(date, signed_value)], sorted by date."""
     rows = conn.execute(
         """SELECT team, event_type, magnitude, confidence, published_at
            FROM news_events e JOIN news n ON n.article_id = e.article_id
@@ -59,7 +59,7 @@ def load_events(conn: sqlite3.Connection, extractor: str = "llm") -> dict[str, l
 
 
 def features_for(team: str, asof: date, events: dict[str, list[tuple[date, float]]]) -> tuple[float, float]:
-    """返回 (净信号, 强度计数)，只统计 asof 之前 WINDOW_DAYS 天内的事件。"""
+    """Return (net signal, strength count), counting only events within WINDOW_DAYS before asof."""
     items = events.get(team)
     if not items:
         return 0.0, 0.0

@@ -1,7 +1,7 @@
-"""用 CDP 浏览器抓 HLTV 比赛详情（地图比分 + veto）。
+"""Scrape HLTV match details (map scores + veto) with a CDP browser.
 
-HLTV 对直连 HTTP 有 Cloudflare 挑战，但浏览器执行 JS 后能通过。
-速度约 3–4 秒/场，适合后台慢速补历史。
+HLTV serves a Cloudflare challenge to direct HTTP requests, but a browser that executes JS gets through.
+Throughput is about 3-4 seconds per match, suitable for slow background backfills.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def crawl(conn, limit: int = 50, since: str | None = "2023-01-01",
                 skipped += 1
                 continue
             if "mapholder" not in html and "veto-box" not in html:
-                # 可能是挑战页，等一会儿重试一次
+                # May be a challenge page; wait a bit and retry once
                 time.sleep(60)
                 try:
                     html = b.goto(url, wait=3, ready_check="mapholder", max_wait=25)

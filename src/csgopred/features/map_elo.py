@@ -1,11 +1,11 @@
-"""地图级 Elo + veto 模拟 + BO 系列赛概率。
+"""Map-level Elo + veto simulation + BO series probabilities.
 
-思路：
-1. 每支队伍在每张图上单独维护评分；
-2. 用「相对强弱」模拟 ban/pick（弱图先 ban、强图先 pick）；
-3. 按选出的地图集合，用单图胜率算系列赛胜率。
+Approach:
+1. Each team keeps a separate rating on each map;
+2. Simulate ban/pick from relative strength (ban weak maps first, pick strong maps first);
+3. Compute the series win probability from the selected map set using per-map win rates.
 
-特征只用到比赛日之前的地图结果，避免泄漏。
+Features use only map results from before the match date, to avoid leakage.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ class MapModel:
         self.games: dict[tuple[str, str], int] = defaultdict(int)
         self.team_map: dict[str, list[tuple[str, float, int]]] = defaultdict(list)
 
-    # ---------- 单图评分 ----------
+    # ---------- Per-map ratings ----------
     def map_rating(self, team: str, mp: str, team_elo: float) -> float:
         key = (team, mp)
         r = self.rating.get(key)
@@ -63,7 +63,7 @@ class MapModel:
         return {mp: v - avg for mp, v in vals.items()}
 
     def veto(self, a: str, b: str, fmt: str, elo_a: float, elo_b: float) -> list[str]:
-        """按相对强弱模拟 ban/pick，返回实际会打的地图（有序）。"""
+        """Simulate ban/pick by relative strength and return the maps that will actually be played (in order)."""
         pa, pb = self._pref(a, elo_a), self._pref(b, elo_b)
         remaining = list(POOL)
         pick_order: list[str] = []
@@ -88,10 +88,10 @@ class MapModel:
             return remaining[:1]
 
         ban(pa); ban(pb); pick(pa); pick(pb); ban(pb); ban(pa)
-        # 剩下的按 pick 顺序补齐
+        # Fill in the remaining maps in pick order
         return (pick_order + remaining)[:n_maps]
 
-    # ---------- 系列赛 ----------
+    # ---------- Series ----------
     def series_prob(self, a: str, b: str, fmt: str, elo_a: float, elo_b: float,
                     prob_fn=None) -> float:
         maps = self.veto(a, b, fmt, elo_a, elo_b)
@@ -103,7 +103,7 @@ class MapModel:
             ps.append(prob_fn((ra - rb) / 400.0, (elo_a - elo_b) / 400.0, raw)
                       if prob_fn else raw)
         need = {"bo1": 1, "bo3": 2, "bo5": 3}.get(fmt, 2)
-        # dp[(wa, wb)] = 概率
+        # dp[(wa, wb)] = probability
         dp = {(0, 0): 1.0}
         for p in ps:
             nd: dict[tuple[int, int], float] = defaultdict(float)
@@ -116,7 +116,7 @@ class MapModel:
             dp = nd
         return sum(pr for (wa, wb), pr in dp.items() if wa >= need)
 
-    # ---------- 推进 ----------
+    # ---------- Advance ----------
     def update_match(self, a: str, b: str, d: date,
                      maps: list[tuple[str, str]], elo_a: float, elo_b: float) -> None:
         for mp, side in maps:

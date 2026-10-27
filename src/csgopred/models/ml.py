@@ -1,6 +1,6 @@
-"""M2 模型层：逻辑回归 / 梯度提升 + Platt 校准。
+"""M2 model layer: logistic regression / gradient boosting + Platt calibration.
 
-依赖 numpy + scikit-learn（Anaconda 自带；不装 lightgbm，用 HistGradientBoosting 等价）。
+Depends on numpy + scikit-learn (bundled with Anaconda; no lightgbm, HistGradientBoosting is equivalent).
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def time_weights(rows: list[dict], half_life_days: float = 1500.0) -> np.ndarray
 
 
 class Platt:
-    """一维逻辑回归校准：p' = sigmoid(a * logit(p) + b)。"""
+    """One-dimensional logistic calibration: p' = sigmoid(a * logit(p) + b)."""
 
     def __init__(self) -> None:
         self.a = 1.0
@@ -125,7 +125,7 @@ def load(path: str | Path) -> tuple[Model, dict]:
 
 
 def fit_elo_baseline(train_rows: list[dict], w: np.ndarray) -> tuple[float, float]:
-    """M1 基线：只用 elo_diff 的一维逻辑回归。"""
+    """M1 baseline: one-dimensional logistic regression on elo_diff only."""
     X = np.array([[r["features"]["elo_diff"]] for r in train_rows])
     y = labels(train_rows)
     lr = LogisticRegression(C=1.0, max_iter=2000)

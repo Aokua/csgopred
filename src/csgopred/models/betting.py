@@ -1,10 +1,10 @@
-"""下注建议：凯利公式、期望增长、回撤模拟。
+"""Betting advice: Kelly criterion, expected growth, drawdown simulation.
 
-原则：
-- 只用「模型概率 + 用户实际能拿到的赔率」算，不用我们自己的报价倒推；
-- 默认给 1/4 凯利（模型有误差，满凯利波动过大）；
-- 用 95% 区间下界做「保守凯利」，避免高估优势；
-- 没有正期望时明确返回 0，不粉饰。
+Principles:
+- Compute only from "model probability + the odds the user can actually get", never back out from our own quotes;
+- Default to 1/4 Kelly (the model has error and full Kelly is too volatile);
+- Use the 95% interval lower bound for "conservative Kelly" to avoid overstating the edge;
+- Return 0 explicitly when there is no positive expectation; no sugar-coating.
 """
 
 from __future__ import annotations
@@ -12,11 +12,11 @@ from __future__ import annotations
 import math
 import random
 
-MAX_FRACTION = 0.10  # 单场最多压 10% 本金，防止模型极端输出
+MAX_FRACTION = 0.10  # Cap a single bet at 10% of the bankroll to guard against extreme model outputs
 
 
 def kelly(p: float, odds: float) -> float:
-    """满凯利比例（占本金）。无正期望返回 0。"""
+    """Full-Kelly fraction (of bankroll). Returns 0 when there is no positive expectation."""
     if odds <= 1.0 or not (0 < p < 1):
         return 0.0
     b = odds - 1.0
@@ -25,7 +25,7 @@ def kelly(p: float, odds: float) -> float:
 
 
 def expected_growth(p: float, odds: float, f: float) -> float:
-    """单次下注的期望对数增长率（每单位本金）。"""
+    """Expected log growth rate of a single bet (per unit of bankroll)."""
     if f <= 0:
         return 0.0
     win = 1.0 + f * (odds - 1.0)
@@ -37,7 +37,7 @@ def expected_growth(p: float, odds: float, f: float) -> float:
 
 def simulate(p: float, odds: float, f: float, bets: int = 100,
              paths: int = 2000, seed: int = 7) -> dict:
-    """蒙特卡洛：固定比例下注 N 场，返回回撤与破产概率。"""
+    """Monte Carlo: bet N times at a fixed fraction and return drawdown and ruin probability."""
     if f <= 0:
         return {"median_max_dd": 0.0, "p95_max_dd": 0.0, "ruin_prob": 0.0, "median_final": 1.0}
     rng = random.Random(seed)
@@ -72,13 +72,13 @@ def simulate(p: float, odds: float, f: float, bets: int = 100,
 
 def advice(p: float, odds: float, bankroll: float, fraction: float = 0.25,
            p_low: float | None = None, bets_horizon: int = 100) -> dict:
-    """给出一场比赛的下注建议。
+    """Produce a betting suggestion for one match.
 
-    p        模型胜率
-    odds     用户实际能拿到的赔率（十进制）
-    bankroll 全部本金
-    fraction 凯利折扣（0.25 = 1/4 凯利）
-    p_low    95% 区间下界（用于保守凯利）
+    p        model win probability
+    odds     decimal odds the user can actually get
+    bankroll total bankroll
+    fraction Kelly fraction (0.25 = 1/4 Kelly)
+    p_low    95% interval lower bound (used for conservative Kelly)
     """
     full = kelly(p, odds)
     edge = p * odds - 1.0

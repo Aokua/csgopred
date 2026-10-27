@@ -1,12 +1,13 @@
-"""Walk-forward 回测。
+"""Walk-forward backtest.
 
-协议（不可改动）：
-1. 按时间排序，前 split_ratio 作训练期，之后作测试期；
-2. 训练期：Elo 依时间推进，收集 (elo_diff, y)，拟合概率映射；
-3. 测试期：Elo 继续推进（只用到此前比赛），每场先预测再更新；
-4. 指标只在测试期计算。
+Protocol (must not be changed):
+1. Sort by time; the first split_ratio is the training period and the rest is the test period;
+2. Training period: advance Elo over time, collect (elo_diff, y), and fit the probability mapping;
+3. Test period: keep advancing Elo (using only earlier matches); predict each match before updating;
+4. Metrics are computed on the test period only.
 
-这样评估的是「上线后逐场使用」的真实表现，而不是「用未来数据训练」的虚高数字。
+This measures the real performance of "using the model match by match after launch", not inflated
+numbers from training on future data.
 """
 
 from __future__ import annotations
@@ -40,8 +41,8 @@ def load_matches(conn: sqlite3.Connection, date_from: str | None = None,
     if not dedupe:
         return rows
 
-    # 同一场可能同时来自 CSV 与 HLTV：按「日期 + 双方队名」去重，优先保留 HLTV
-    # （HLTV 有地图与 veto，信息更全）。
+    # The same match may come from both CSV and HLTV: dedupe by "date + both team names", preferring HLTV
+    # (HLTV has maps and veto, so its information is more complete).
     best: dict[tuple, tuple[int, dict]] = {}
     for r in rows:
         key = (r["start_date"], tuple(sorted((r["team_a"], r["team_b"]))))
@@ -75,7 +76,7 @@ def walk_forward(
 
     ps, raw_ps, ys_test, meta = [], [], [], []
     for m in test:
-        d = model.step(m)  # 先算 pre-match 评级并更新状态
+        d = model.step(m)  # Compute the pre-match ratings first, then update state
         x = (d["rating_a"] - d["rating_b"]) / 400.0
         p = predict_from_elo(a, b, d["rating_a"] - d["rating_b"])
         ps.append(p)
@@ -122,7 +123,7 @@ def walk_forward(
 
 
 def train_full(matches: list[dict], asof: str | None = None) -> tuple[EloModel, float, float]:
-    """用全部（截至 asof 的）比赛重放，返回 (模型, a, b)。"""
+    """Replay all matches (up to asof) and return (model, a, b)."""
     model = EloModel()
     xs, ys = [], []
     cutoff = date.fromisoformat(asof) if asof else None

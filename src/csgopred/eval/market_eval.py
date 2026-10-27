@@ -1,10 +1,10 @@
-"""M4：把赔率与模型对齐，输出市场对比指标。
+"""M4: align odds with the model and output market comparison metrics.
 
-流程：
-1. 训练集 = 赔率窗口之前的比赛（避免用未来训练）；
-2. 用 M2 模型预测赔率窗口内的比赛；
-3. 与收盘赔率（去水后）比较 log loss / Brier；
-4. 计算 CLV 分布与凯利 ROI。
+Flow:
+1. Training set = matches before the odds window (avoid training on the future);
+2. Use the M2 model to predict matches inside the odds window;
+3. Compare log loss / Brier against closing odds (after de-vigging);
+4. Compute the CLV distribution and Kelly ROI.
 """
 
 from __future__ import annotations

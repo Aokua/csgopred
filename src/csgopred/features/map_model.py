@@ -1,8 +1,8 @@
-"""地图级模型：把「单图 Elo 差」和「队伍 Elo 差」组合成校准后的单图胜率。
+"""Map-level model: combine the "per-map Elo difference" and the "team Elo difference" into a calibrated per-map win probability.
 
-原始 map Elo 概率校准很差（地图胜率 log loss 约 0.74），
-用逻辑回归重新组合后能降到 0.70 左右。
-这里用走步式重训：只用当前日期之前的地图结果，每积累 N 张图重训一次。
+Raw map Elo probabilities are poorly calibrated (map win-rate log loss around 0.74);
+recombining them with logistic regression brings that down to about 0.70.
+Training is walk-forward: only map results before the current date are used, with a retrain every N accumulated maps.
 """
 
 from __future__ import annotations

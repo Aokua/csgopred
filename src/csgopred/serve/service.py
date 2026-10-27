@@ -1,4 +1,4 @@
-"""服务层：把模型能力包装成可复用的函数（CLI / API / 每日任务共用）。"""
+"""Service layer: wrap model capabilities as reusable functions (shared by the CLI / API / daily jobs)."""
 
 from __future__ import annotations
 

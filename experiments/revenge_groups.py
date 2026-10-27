@@ -1,4 +1,4 @@
-"""复仇效应的分组检验：按间隔、按上次赢家是否热门。"""
+"""Grouped tests of the revenge effect: by gap and by whether the previous winner was the favourite."""
 
 import math
 import sys

@@ -1,6 +1,6 @@
-"""零依赖 Web 服务：静态页面 + JSON API。
+"""Zero-dependency web service: static pages + JSON API.
 
-启动：python -m csgopred serve --port 8080
+Start with: python -m csgopred serve --port 8080
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ STATIC = Path(__file__).parent / "static"
 
 
 class Handler(BaseHTTPRequestHandler):
-    def log_message(self, fmt, *args):  # 安静一点
+    def log_message(self, fmt, *args):  # Keep quiet
         pass
 
     def _json(self, payload, code: int = 200) -> None:
@@ -75,7 +75,7 @@ class Handler(BaseHTTPRequestHandler):
                 conn = connect()
                 return self._json(service.recent_news(conn, int(qs.get("limit", 20))))
             return self._json({"error": "not found"}, 404)
-        except Exception as exc:  # 把异常返回给前端，便于排错
+        except Exception as exc:  # Return the exception to the frontend to ease debugging
             return self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
 
 

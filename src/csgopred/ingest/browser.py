@@ -1,9 +1,9 @@
-"""极简 CDP 浏览器封装（Edge/Chrome headless）。
+"""Minimal CDP browser wrapper (headless Edge/Chrome).
 
-用途：处理需要执行 JS 的站点（5EPlay 的阿里云 WAF 挑战、HLTV 的 Cloudflare）。
-只依赖 websocket-client + 标准库；不引入 playwright。
+Purpose: handle sites that require JavaScript execution (5EPlay's Aliyun WAF challenge, HLTV's Cloudflare).
+Depends only on websocket-client + the standard library; no playwright.
 
-用法：
+Usage:
     with Browser() as b:
         html = b.html("https://www.5eplay.com/")
         cookies = b.cookies()
@@ -54,7 +54,7 @@ class Browser:
         self._id = 0
         self._events: list[dict] = []
 
-    # ---------------- 生命周期 ----------------
+    # ---------------- Lifecycle ----------------
     def __enter__(self) -> "Browser":
         self.start()
         return self
@@ -98,7 +98,7 @@ class Browser:
             except Exception:
                 self.proc.kill()
 
-    # ---------------- 页面 ----------------
+    # ---------------- Pages ----------------
     def new_page(self, url: str) -> None:
         target = self._http("/json/new?" + url, method="PUT")
         ws_url = target["webSocketDebuggerUrl"]
@@ -150,7 +150,7 @@ class Browser:
         return self.eval("document.documentElement.outerHTML") or ""
 
     def requests_log(self) -> list[str]:
-        """本次会话捕获到的网络请求 URL（去重）。"""
+        """Network request URLs captured in this session (deduplicated)."""
         out, seen = [], set()
         for ev in self._events:
             if ev.get("method") == "Network.requestWillBeSent":
@@ -167,7 +167,7 @@ class Browser:
             _t.sleep(pause)
 
     def screenshot(self, path: str, full_page: bool = True) -> str:
-        """当前页面截图（PNG）。"""
+        """Screenshot of the current page (PNG)."""
         import base64
 
         params: dict = {"format": "png"}

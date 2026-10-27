@@ -1,10 +1,11 @@
-"""新闻抓取：HLTV（英文）与完美世界 CSGO 官网（中文）。
+"""News scraping: HLTV (English) and the Perfect World CSGO site (Chinese).
 
-设计：抓取与抽取分离。
-- 抓取只负责把「标题 / 发布时间 / 正文」落库（news 表），带内容哈希去重；
-- 抽取（rule 或 LLM）从正文产出结构化事件（news_events 表），供特征层按半衰期聚合。
+Design: scraping and extraction are separate.
+- Scraping only stores "title / publish time / body" in the news table, deduplicated by content hash;
+- Extraction (rule-based or LLM) turns bodies into structured events (the news_events table),
+  which the feature layer aggregates with half-life decay.
 
-时间戳一律用**发布时间**，不是抓取时间——这是防泄漏的关键。
+Timestamps always use the **publish time**, not the scrape time -- this is the key to preventing leakage.
 """
 
 from __future__ import annotations
@@ -99,7 +100,7 @@ def parse_hltv_article(html: str, url: str) -> NewsItem | None:
     )
 
 
-# ---------------------------------------------------------------- 完美世界 CSGO 官网
+# ---------------------------------------------------------------- Perfect World CSGO site
 def parse_pw_list(html: str) -> list[str]:
     return sorted(set(re.findall(r"/article/details/\d{8}/\d+\.html", html)))
 
@@ -142,7 +143,7 @@ def parse_pw_article(html: str, url: str) -> NewsItem | None:
     )
 
 
-# ---------------------------------------------------------------- 存储
+# ---------------------------------------------------------------- Storage
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS news (
     article_id   TEXT PRIMARY KEY,
@@ -194,14 +195,14 @@ def store(conn: sqlite3.Connection, items: list[NewsItem]) -> int:
     return n
 
 
-# ---------------------------------------------------------------- 规则抽取
+# ---------------------------------------------------------------- Rule-based extraction
 EVENT_PATTERNS = [
-    # 离队 / 下放
+    # Departure / benched
     ("roster_remove",
      r"(\bpart(s)? ways with\b|\bdepart(s|ed|ure)?\b|\bleaves?\b|\bbenched?\b|\breleased?\b|\bexits?\b|"
      r"离队|解约|退出|下放|替补席|不再效力|结束合作)",
      "negative", 3),
-    # 加入 / 签约
+    # Joining / signing
     ("roster_add",
      r"(\bsign(s|ed|ing)?\b|\bjoins?\b|\bjoined\b|\badds?\b|\brecruits?\b|\breturns? to\b|"
      r"加入|加盟|签约|官宣|转会|引进|回归)",
@@ -237,7 +238,7 @@ def _find_teams(text: str, names: list[str]) -> list[str]:
             continue
         if name.lower() in low:
             hits.append(name)
-    # 长名优先，避免 "Natus Vincere" 与 "NAVI" 重复命中
+    # Longest name first, so "Natus Vincere" and "NAVI" do not both match
     hits.sort(key=len, reverse=True)
     out: list[str] = []
     for h in hits:
@@ -256,12 +257,12 @@ def _sentences(text: str) -> list[str]:
 
 def extract_events(conn: sqlite3.Connection, limit: int | None = None,
                    source: str | None = None) -> dict:
-    """规则抽取：句级匹配 + 队名共现，宁缺毋滥。
+    """Rule-based extraction: sentence-level matching + team-name co-occurrence; prefer no event over a wrong one.
 
-    规则版只是「没有 LLM 时的基线」，precision 优先：
-    - 只在同一句里同时出现队名与触发词时才记事件；
-    - 含活动/福利/商城等噪声词的句子直接跳过；
-    - 事件证据保留原句，便于人工复核与后续 LLM 复核。
+    The rule version is only the "no LLM" baseline, and it prioritizes precision:
+    - An event is recorded only when a team name and a trigger word appear in the same sentence;
+    - Sentences containing noise words (events/giveaways/store, etc.) are skipped outright;
+    - Each event keeps its source sentence as evidence, for human review and later LLM review.
     """
     conn.executescript(SCHEMA)
     names = _known_teams(conn)
@@ -303,6 +304,6 @@ def extract_events(conn: sqlite3.Connection, limit: int | None = None,
                 if cur.rowcount:
                     total += 1
                     by_type[etype] = by_type.get(etype, 0) + 1
-                break  # 一句只记一个主事件
+                break  # Record only one primary event per sentence
     conn.commit()
     return {"articles": len(rows), "events": total, "by_type": by_type}

@@ -1,9 +1,10 @@
-"""通用 CSV 赛果导入。
+"""Generic CSV match-result import.
 
-当前已适配的数据集（开源、无需鉴权）：
+Datasets already supported (open source, no authentication):
 - hojlund123/csgo-dataset: date, team1, team2, team1score, team2score, event, bostyle, ...
 
-列映射通过 COLUMN_ALIASES 自动识别，换数据集时只要列名在别名表里就能直接读。
+Column mapping is detected automatically via COLUMN_ALIASES, so a new dataset can be read directly
+as long as its column names appear in the alias table.
 """
 
 from __future__ import annotations
@@ -138,9 +139,10 @@ def ingest_csv(
 
 
 def merge_team_variants(conn: sqlite3.Connection) -> int:
-    """合并仅大小写/空白不同的队名变体（Falcons vs FALCONS）。
+    """Merge team-name variants that differ only in case/whitespace (Falcons vs FALCONS).
 
-    取出场次数最多的写法作为规范名，其余变体改写为它。返回合并的变体数。
+    Use the most frequent spelling as the canonical name and rewrite the other variants to it.
+    Return the number of merged variants.
     """
     rows = conn.execute(
         """SELECT team, count(*) c FROM (

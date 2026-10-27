@@ -1,8 +1,8 @@
-"""队名归一与赛制解析。
+"""Team-name normalization and format parsing.
 
-原则：只做确定性归一（大小写、空白、别名表），不做模糊匹配——
-错误合并两支不同战队比保留重复更危险。别名表在 configs/team_aliases.json
-里手工维护，冲突时以别名表为准。
+Principle: only deterministic normalization (case, whitespace, alias table); no fuzzy matching --
+merging two different teams by mistake is more dangerous than keeping duplicates. The alias table is
+maintained by hand in configs/team_aliases.json and wins any conflict.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .config import CONFIGS
 
-# bo1 时数据源会把地图缩写写进 bostyle 字段
+# For bo1 the data source puts the map abbreviation in the bostyle field
 MAP_CODES = {
     "inf": "Inferno",
     "mrg": "Mirage",
@@ -48,14 +48,14 @@ def load_aliases() -> dict[str, str]:
 
 
 def canonical_key(name: str) -> str:
-    """归一为比较用的 key：NFKC、去首尾空白、压缩空格、casefold。"""
+    """Normalize to a comparison key: NFKC, strip, collapse whitespace, casefold."""
     s = unicodedata.normalize("NFKC", name or "")
     s = _WS.sub(" ", s).strip()
     return s.casefold()
 
 
 def canonical_team(name: str) -> str:
-    """返回展示用队名；命中别名表则返回别名表里的规范名。"""
+    """Return the display team name; if it hits the alias table, return the canonical name from the table."""
     key = canonical_key(name)
     aliases = load_aliases()
     if key in aliases:
@@ -65,15 +65,15 @@ def canonical_team(name: str) -> str:
 
 
 def team_id(name: str) -> str:
-    """稳定 ID：规范名的 key（小写、去空白）。"""
+    """Stable ID: the key of the canonical name (lowercase, whitespace removed)."""
     return canonical_key(canonical_team(name))
 
 
 def resolve_team(name: str, known: Iterable[str]) -> tuple[str | None, str]:
-    """把用户输入的队名解析到已有队伍。
+    """Resolve a user-supplied team name to an existing team.
 
-    返回 (规范名 | None, 匹配方式)：exact / stripped / prefixed / fuzzy / unknown。
-    只在唯一命中时才接受模糊匹配，避免把两支不同战队混为一谈。
+    Returns (canonical name | None, match method): exact / stripped / prefixed / fuzzy / unknown.
+    Fuzzy matching is accepted only on a unique hit, to avoid conflating two different teams.
     """
     known_map = {canonical_key(k): k for k in known}
     key = canonical_key(canonical_team(name))
@@ -90,7 +90,7 @@ def resolve_team(name: str, known: Iterable[str]) -> tuple[str | None, str]:
 
 
 def parse_format(bostyle: str) -> tuple[str, str | None]:
-    """把 bostyle 解析成 (format, map_name)。
+    """Parse bostyle into (format, map_name).
 
     'bo3' -> ('bo3', None)
     'inf' -> ('bo1', 'Inferno')
@@ -101,5 +101,5 @@ def parse_format(bostyle: str) -> tuple[str, str | None]:
         return raw, None
     if raw in MAP_CODES:
         return "bo1", MAP_CODES[raw]
-    # 兜底：未知值按 bo1 处理，但地图置空，避免污染地图统计
+    # Fallback: treat unknown values as bo1 but leave the map empty, so map statistics are not polluted
     return "bo1", None

@@ -1,12 +1,12 @@
-"""Liquipedia 地图数据：从赛事页的 match popup 解析比分。
+"""Liquipedia map data: parse scores from match popups on event pages.
 
-Liquipedia 的 API 不需要过 Cloudflare，页面里每个 match popup 都带
-地图名和总比分，是目前唯一稳定可拿的 2023+ 地图来源。
+Liquipedia's API is not behind Cloudflare, and every match popup on a page carries the map name
+and total score, making it the only stable 2023+ map source available right now.
 
-限制：
-- 只覆盖 Liquipedia 收录的赛事（一线/二线为主）；
-- 解析依赖 popup 文本里的 "总比分 半场1 半场2 地图名 ..." 结构，
-  加时赛地图的数字更多，会被跳过（宁可少，不要错）。
+Limitations:
+- Only covers events documented on Liquipedia (mainly tier 1/2);
+- Parsing relies on the "total score half1 half2 map name ..." structure in the popup text;
+  overtime maps contain extra numbers and are skipped (better to miss data than to be wrong).
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def _session():
 
 
 def _get(params: dict, timeout=(10, 60)):
-    """带 429 退避的请求。Liquipedia 限制约 1 请求/2 秒，超了会 429。"""
+    """Request with 429 backoff. Liquipedia allows about 1 request per 2 seconds; exceeding it returns 429."""
     import time
 
     s = _session()
@@ -52,13 +52,13 @@ def _get(params: dict, timeout=(10, 60)):
 
 
 def search_titles(query: str, limit: int = 5) -> list[str]:
-    """先试前缀匹配（赛事页通常就是查询名），再退回全文搜索。"""
+    """Try prefix search first (the event page is usually the query name), then fall back to full-text search."""
     import time
 
     s = _session()
     out: list[str] = []
     for lst in ("prefixsearch", "search"):
-        time.sleep(2.0)  # Liquipedia 限速：约 1 次请求 / 2 秒
+        time.sleep(2.0)  # Liquipedia rate limit: about 1 request / 2 seconds
         try:
             r = _get({"action": "query", "format": "json", "list": lst,
                       ("pssearch" if lst == "prefixsearch" else "srsearch"): query,
@@ -115,7 +115,7 @@ def parse_page(html: str) -> list[dict]:
 
 
 def store(conn, rows: list[dict], event_hint: str = "") -> dict:
-    """把解析结果对到 matches 表（日期 ±1 天 + 队名归一）并写入 maps。"""
+    """Match parsed results against the matches table (date +/-1 day + normalized team names) and write them to maps."""
     from ..normalize import canonical_team
 
     written = matched = skipped = 0
