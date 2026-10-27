@@ -34,6 +34,11 @@ Sources: the hojlund dataset, an HLTV scrape, a Kaggle map-level dataset, and Li
 Team names are normalized with a four-stage matcher; BO1/BO5 labels are repaired from
 the number of maps actually played.
 
+**Data availability.** The SQLite snapshot (`data/csgopred.db`, 60 MB) and the raw
+player-statistics CSV (`data/raw/kaggle/players.csv`, 129 MB) are distributed with this
+repository via Git LFS, so the pipeline can be rerun end to end. Their SHA-256 hashes are
+recorded in `repro/snapshot.json`.
+
 ## Quick start
 
 ```bash
@@ -109,6 +114,10 @@ tests/         56 tests
 - Quarto source for the reproducibility stage: `paper/manuscript.qmd`
 
 ## License and scope
+
+Code is released under the **MIT License**; documentation, figures and the data snapshot
+are released under **CC BY 4.0**. Third-party source data (HLTV, Liquipedia, Kaggle, the
+hojlund dataset) remains subject to its own terms; see `LICENSE` for details.
 
 Research use only. Scraping respects target-site terms and rate limits. Market prices
 are used for evaluation only; nothing here is betting advice.
