@@ -1,58 +1,61 @@
-# 复现说明（Reproducibility）
+# Reproducibility
 
-本目录提供论文全部实验的可复现材料。所有随机过程固定 `seed = 42`，评估严格按时间切分。
+This directory contains everything needed to reproduce the paper's experiments. All
+randomised procedures use `seed = 42`, and evaluation is strictly walk-forward.
 
-## 1. 数据快照
+## 1. Data snapshot
 
-| 项 | 值 |
+| Item | Value |
 |---|---|
-| 数据库 | `data/csgopred.db` |
-| 快照哈希 | 见 `repro/snapshot.json` 的 `database.sha256` |
-| 模型 | `data/model.pkl`，哈希见 `model.sha256` |
-| 行数 | matches / maps / news / news_events 见 `counts` |
+| Database | `data/csgopred.db` |
+| Snapshot hash | `database.sha256` in `repro/snapshot.json` |
+| Model | `data/model.pkl`, see `model.sha256` |
+| Row counts | matches / maps / news / news_events in `counts` |
 
-生成/校验快照：
+Generate or verify the snapshot:
 
 ```bash
 python repro/make_snapshot.py
 ```
 
-把 `snapshot.json` 里的 sha256 与本地文件对比即可确认数据一致。
+Compare the sha256 values in `snapshot.json` with the local files to confirm the data
+matches what the paper used.
 
-## 2. 环境
+## 2. Environment
 
 ```bash
 python -c "import sys,numpy,sklearn;print(sys.version);print(numpy.__version__, sklearn.__version__)"
 ```
 
-论文使用的版本记录在 `snapshot.json` 的 `python` / `numpy` / `sklearn` 字段。
+Exact versions are recorded in `snapshot.json` under `python`, `numpy` and `sklearn`.
 
-## 3. 训练复现
+## 3. Reproducing training
 
 ```bash
 export PYTHONPATH=src
 python repro/train.py
 ```
 
-输出：
+Outputs:
 
-- `repro/results.json`：两个特征集在三个时间切分上的对数损失
-- `data/model_repro.pkl`：用推荐 25 维特征集重训的模型
+- `repro/results.json` — log loss for two feature sets on three time splits
+- `data/model_repro.pkl` — model retrained on the recommended 25-feature set
 
-论文表 5-1、表 5-4 的数值可直接对齐 `results.json` 与 `paper/data/*.json`。
+The numbers in Tables 5-1 and 5-4 of the paper can be checked directly against
+`results.json` and the JSON files in `paper/data/`.
 
-## 4. 实验复现
+## 4. Reproducing experiments
 
-| 脚本 | 产出 | 对应论文章节 |
+| Script | Output | Paper section |
 |---|---|---|
-| `experiments/decompose.py` | `paper/data/decomp.json` | 5.5 信息源贡献分解（图 5-1、5-2） |
-| `experiments/feature_sets.py` | `paper/data/feature_sets.json` | 表 5-4 推荐特征集 |
-| `experiments/format_revenge.py` | `paper/data/format_revenge.json` | 5.7.1 地图数建模 |
-| `experiments/revenge_groups.py` | 终端输出 | 5.7.2 再相遇分组 |
-| `experiments/rematch_calibration.py` | 终端输出 | 5.7.2 Elo 过度自信 |
-| `experiments/make_figures.py` | `paper/images/*.png` | 图 3-1、5-1～5-4、6-1 |
+| `experiments/decompose.py` | `paper/data/decomp.json` | 5.5 (Figures 5-1, 5-2) |
+| `experiments/feature_sets.py` | `paper/data/feature_sets.json` | Table 5-4 |
+| `experiments/format_revenge.py` | `paper/data/format_revenge.json` | 5.7.1 |
+| `experiments/revenge_groups.py` | console output | 5.7.2 |
+| `experiments/rematch_calibration.py` | console output | 5.7.2 |
+| `experiments/make_figures_en.py` | `paper/images_en/*.png` | Figures 3-1, 5-1 to 5-4, 6-1 |
 
-依次运行：
+Run them in order:
 
 ```bash
 export PYTHONPATH=src
@@ -61,20 +64,21 @@ python experiments/feature_sets.py
 python experiments/format_revenge.py
 python experiments/revenge_groups.py
 python experiments/rematch_calibration.py
-python experiments/make_figures.py
+python experiments/make_figures_en.py
 ```
 
-## 5. 配置
+## 5. Configuration
 
-`repro/config.json` 汇总了：
+`repro/config.json` collects:
 
-- 超参数（C=0.5、liblinear、时间权重半衰期 1500 天、校准比例 0.15）
-- Elo 与地图 Elo 参数
-- 三套特征列表（base20 / base+map / recommended25）
-- 时间切分点
+- hyperparameters (C = 0.5, lbfgs, recency half-life 1,500 days, calibration fraction 0.15)
+- Elo and map-Elo parameters
+- the three feature lists (base20 / base+map / recommended25)
+- the time split dates
 
-## 6. 已知限制
+## 6. Known limitations
 
-- 数据库为研究用快照，不含原始网页与抓取日志；
-- 新闻事件由大语言模型抽取，`news_events` 表保留了原文引用片段以便核验；
-- 地图数据覆盖率约 17%，未覆盖比赛的特征取中性值。
+- The database is a research snapshot and does not include raw web pages or crawl logs.
+- News events were extracted by an LLM; `news_events` keeps the supporting quote for
+  each event so that extraction can be audited.
+- Map coverage is about 17% of matches; uncovered matches receive neutral feature values.
